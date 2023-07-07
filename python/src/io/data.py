@@ -19,8 +19,8 @@ def read_problem(json_path: Path) -> ProblemInfo:
 def save_solution(solution: ProblemSolution, save_path: Path) -> None:
     dict_out = {
         'placements': [
-            {'x': cur_placement['x'], 'y': cur_placement['y']} for cur_placement in solution.placements
+            {'x': cur_placement.x, 'y': cur_placement.y} for cur_placement in solution.placements
         ]
     }
     with save_path.open('w') as f:
-        json.dump(dict_out)
+        json.dump(dict_out, f)
