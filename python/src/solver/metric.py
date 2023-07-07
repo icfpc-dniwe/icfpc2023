@@ -52,7 +52,6 @@ def calculate_happiness(musicians: np.ndarray, instruments: np.ndarray, attendee
                                          musicians.shape[0]).reshape((musicians.shape[0], 2)))
         ) + np.eye(musicians.shape[0]) * 100) > 5, axis=1)
         cur_tastes = attendee_tastes[cur_attendee_idx]
-        print(musician_not_blocked.sum())
         attendee_happiness = cur_tastes[instruments] * musician_not_blocked / distances_sqr[cur_attendee_idx]
         total_happiness += attendee_happiness.sum()
     return total_happiness
