@@ -23,8 +23,8 @@ isValidPlacement placements pos = all (\placement -> calculateDistance pos place
 -- Calculate happiness of an attendee based on musician placements
 calculateHappiness :: Attendee -> [Musician] -> [Placement] -> Taste
 calculateHappiness attendee musicians placements =
-  sum [taste / (calculateDistance (fst attendee) placement + 1) | (musician, placement) <- zip musicians placements, musician `elem` [0..length (snd attendee) - 1]]
-  where taste = snd attendee !! musician
+  sum [(taste attendee musician) / (calculateDistance (fst attendee) placement) | musician <- musicians, placement <- placements]
+  where taste a m = 
 
 -- Find the best placement for an attendee
 findBestPlacement :: Attendee -> [Musician] -> [Placement] -> Position
@@ -33,8 +33,8 @@ findBestPlacement attendee musicians placements =
 
 -- Solve the problem
 solveProblem :: Problem -> [Placement]
-solveProblem (room, stage, musicians, attendees) =
-  let placements = replicate (floor (stageWidth / 10)) (0, 0) -- Initialize placements with default values
+solveProblem (room, (stageWidth, stageHeight, corner), musicians, attendees) =
+  let placements = replicate (floor (stageWidth / 10)) corner -- Initialize placements with default values
       updatePlacement [] [] placements = placements
       updatePlacement (attendee:restAttendees) (musician:restMusicians) placements =
         let bestPlacement = findBestPlacement attendee musicians placements
