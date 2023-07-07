@@ -21,7 +21,7 @@ def distance_to_line(line_coefficients: np.ndarray, points: np.ndarray) -> np.nd
 
 # https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment/6853926#6853926
 @njit
-def distance_to_segment(x: float, y: float, x1: float, y1: float, x2: float, y2: float):
+def distance_to_segment(x: float, y: float, x1: float, y1: float, x2: float, y2: float) -> float:
     A = x - x1
     B = y - y1
     C = x2 - x1
@@ -53,7 +53,7 @@ def distances_to_segments(points: np.ndarray, segments: t.Tuple[np.ndarray, np.n
     distances = np.zeros((points.shape[0], segments[0].shape[0]), dtype=np.float64)
     for cur_point_idx in range(points.shape[0]):
         for cur_segment_idx in range(segments[0].shape[0]):
-            distances = distance_to_segment(
+            distances[cur_point_idx, cur_segment_idx] = distance_to_segment(
                 points[cur_point_idx, 0], points[cur_point_idx, 1],
                 segments[0][cur_segment_idx, 0], segments[0][cur_segment_idx, 1],
                 segments[1][cur_segment_idx, 0], segments[1][cur_segment_idx, 1]
