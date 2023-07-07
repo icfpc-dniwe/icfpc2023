@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 from scipy.spatial.distance import cdist, pdist
-from src.solver.geometry import get_line_coefficients, distance_to_line
+from src.solver.geometry import get_line_coefficients, distance_to_line, distances_to_segments
 import typing as t
 
 
@@ -44,11 +44,13 @@ def calculate_happiness(musicians: np.ndarray, attendees: np.ndarray, attendee_t
     """
     total_happiness = 0
     for cur_attendee_idx in range(attendees.shape[0]):
-        line_coefficients = get_line_coefficients(
+        musician_not_blocked = np.all(distances_to_segments(
             musicians[:, :2],
-            np.tile(attendees[cur_attendee_idx:cur_attendee_idx+1, :2], (musicians.shape[0], 1))
-        )
-        musician_blocked = np.all(distance_to_line(line_coefficients, musicians[:, :2]) > 5, axis=1)
+            (musicians[:, :2], np.tile(attendees[cur_attendee_idx][np.newaxis, :],
+                                       (musicians.shape[0], 1)))
+        ) > 5, axis=1)
         cur_tastes = attendee_tastes[cur_attendee_idx]
-        attendee_happiness = cur_tastes[musicians[:, 2]] * musician_blocked
+        attendee_happiness = cur_tastes[musicians[:, 2]] * musician_not_blocked
+        total_happiness += attendee_happiness
+    return total_happiness
 
