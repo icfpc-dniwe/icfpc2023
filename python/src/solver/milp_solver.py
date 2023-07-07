@@ -2,6 +2,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import milp, LinearConstraint, Bounds
 from src.mytypes import ProblemInfo
+from src.solver.geometry import distances_to_segments
 from src.solver.placement import get_placements
 import typing as t
 
@@ -19,6 +20,30 @@ def calculate_taste_cost_matrix(problem_info: ProblemInfo, placements: t.Optiona
     taste_cost = np.zeros((distance_matrix.shape[0], num_tastes), dtype=np.float64)
     for cur_taste in range(num_tastes):
         taste_cost[:, cur_taste] = (attendee_tastes[:, cur_taste] / distance_matrix).sum(axis=1)
+    return taste_cost
+
+
+def calculate_taste_cost_matrix_with_blockers(
+        problem_info: ProblemInfo,
+        placements: np.ndarray,
+        already_placed: np.ndarray
+) -> np.ndarray:
+    attendee_placements = np.array([(a.x, a.y) for a in problem_info.attendees])
+    attendee_tastes = np.array([[taste for taste in a.tastes] for a in problem_info.attendees])
+    num_tastes = attendee_tastes.shape[1]
+    distance_matrix = cdist(placements, attendee_placements, 'euclidean') ** 2
+    musician_not_blocked = np.zeros(distance_matrix.shape, dtype=np.bool_)
+    for cur_attendee_idx in range(len(attendee_placements)):
+        cur_not_blocked = np.all(distances_to_segments(
+            already_placed,
+            (placements, np.repeat(attendee_placements[cur_attendee_idx][np.newaxis, :],
+                                   placements.shape[0]).reshape((2, placements.shape[0])).T)
+        ) > 5, axis=0)
+        musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked
+    taste_cost = np.zeros((distance_matrix.shape[0], num_tastes), dtype=np.float64)
+    for cur_taste in range(num_tastes):
+        taste_cost[:, cur_taste] = ((attendee_tastes[:, cur_taste] / distance_matrix)
+                                    * musician_not_blocked).sum(axis=1)
     return taste_cost
 
 
