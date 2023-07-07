@@ -30,3 +30,22 @@ def test_calculate_happiness():
     assert np.abs(calculate_happiness(musician_pos, musician_instruments,
                                       attendee_positions, attendee_tastes) -
                   ((1 / 100) + (-1 / (np.sqrt(2) * 100)) + (1 / (np.sqrt(2) * 100)))) < eps
+    example_musicians_pos = np.array([
+        (590, 10),
+        (1100, 100),
+        (1100, 150)
+    ], dtype=np.float64)
+    example_instruments = np.array([0, 1, 0], dtype=np.int32)
+    example_attendee_positions = np.array([
+        (100, 500),
+        (200, 1000),
+        (1100, 800)
+    ], dtype=np.float64)
+    example_tastes = np.array([
+        (1000, -1000),
+        (200, 200),
+        (800, 1500)
+    ], dtype=np.float64)
+    example_result = 5343 / 1000000
+    assert np.isclose(calculate_happiness(example_musicians_pos, example_instruments,
+                                          example_attendee_positions, example_tastes), example_result)
