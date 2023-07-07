@@ -23,13 +23,15 @@ def test_calculate_happiness():
         (1, -1),
         (-1, 1)
     ], dtype=np.float64)
+    score = np.ceil(1000000 / 400)
     assert np.abs(calculate_happiness(musician_pos[:1], musician_instruments[:1],
-                                      attendee_positions[:1], attendee_tastes[:1, :1]) - (1 / 400)) < eps
+                                      attendee_positions[:1], attendee_tastes[:1, :1]) - score) < eps
+    score = np.ceil(1000000 / 100)
     assert np.abs(calculate_happiness(musician_pos[:2], musician_instruments[:2],
-                                      attendee_positions[:1], attendee_tastes[:1, :1]) - (1 / 100)) < eps
+                                      attendee_positions[:1], attendee_tastes[:1, :1]) - score) < eps
+    score = np.ceil(1000000 / 100) + np.ceil(-1000000 / (np.sqrt(2) * 100)) + np.ceil(1000000 / (np.sqrt(2) * 100))
     assert np.abs(calculate_happiness(musician_pos, musician_instruments,
-                                      attendee_positions, attendee_tastes) -
-                  ((1 / 100) + (-1 / (np.sqrt(2) * 100)) + (1 / (np.sqrt(2) * 100)))) < eps
+                                      attendee_positions, attendee_tastes) - score) < eps
     example_musicians_pos = np.array([
         (590, 10),
         (1100, 100),
@@ -46,6 +48,6 @@ def test_calculate_happiness():
         (200, 200),
         (800, 1500)
     ], dtype=np.float64)
-    example_result = 5343 / 1000000
+    example_result = 5343
     assert np.isclose(calculate_happiness(example_musicians_pos, example_instruments,
                                           example_attendee_positions, example_tastes), example_result)
