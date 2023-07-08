@@ -35,15 +35,22 @@ def check_positions_valid(
 
 
 # @njit
-def calculate_happiness(musicians: np.ndarray, instruments: np.ndarray, attendees: np.ndarray, attendee_tastes: np.ndarray) -> float:
+def calculate_happiness(
+        musicians: np.ndarray,
+        instruments: np.ndarray,
+        attendees: np.ndarray,
+        attendee_tastes: np.ndarray,
+        reduce: str = 'sum'
+) -> t.Union[float, np.ndarray]:
     """
     :param musicians: NDArray with Mx2 shape. Every row is (X, Y)
     :param instruments: NDArray with Mx1 shape. Every row is (Instrument,)
     :param attendees: NDArray with Ax2 shape. Every row is (X, Y)
     :param attendee_tastes: NDArray with AxT shape. Every row is tastes for a particular attendee
+    :param reduce: either 'sum' or 'none'
     :return: happiness score
     """
-    total_happiness = 0
+    total_happiness = np.zeros((len(attendees,)))
     distances_sqr = cdist(attendees, musicians, 'euclidean') ** 2
     for cur_attendee_idx in range(attendees.shape[0]):
         musician_not_blocked = np.all((distances_to_segments(
@@ -53,6 +60,10 @@ def calculate_happiness(musicians: np.ndarray, instruments: np.ndarray, attendee
         ) + np.eye(musicians.shape[0]) * 100) > 5, axis=0)
         cur_tastes = attendee_tastes[cur_attendee_idx]
         attendee_happiness = np.ceil(1000000 * cur_tastes[instruments] * musician_not_blocked / distances_sqr[cur_attendee_idx])
-        total_happiness += attendee_happiness.sum()
-    return total_happiness
+        total_happiness[cur_attendee_idx] = attendee_happiness.sum()
+    if reduce == 'sum':
+        return total_happiness.sum()
+    elif reduce == 'none':
+        return total_happiness
+    return total_happiness.sum()
 
