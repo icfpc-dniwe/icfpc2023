@@ -54,7 +54,7 @@ def calculate_happiness(
     :param reduce: either 'sum' or 'none'
     :return: happiness score
     """
-    total_happiness = np.zeros((len(attendees), len(musicians)))
+    total_happiness = np.zeros((len(attendees), len(musicians)), dtype=np.int32)
     distances_sqr = cdist(attendees, musicians, 'euclidean') ** 2
     for cur_attendee_idx in range(attendees.shape[0]):
         musician_not_blocked = np.all((distances_to_segments(
