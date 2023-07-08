@@ -9,7 +9,14 @@ from multiprocessing import Pool
 from functools import partial
 
 
-def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e2, solutions_prefix: str = 'nonte'):
+def solve(
+        problem_id: int,
+        num_recalc_step: int = 10,
+        distance_coeff: float = 1e2,
+        solutions_prefix: str = 'nonte',
+        first_recalcs: int = 0,
+        use_ext2: bool = False
+):
     problem_path = Path('../problems/full_round/') / f'{problem_id}.json'
     save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
     save_path.parent.mkdir(exist_ok=True, parents=True)
@@ -19,12 +26,12 @@ def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e
     ys += info.stage.bottom_y
     placements = list(zip(xs.flatten(), ys.flatten()))
     num_musicians_per_instrument = {ins: num for ins, num in zip(*np.unique(info.musicians, return_counts=True))}
-    initial_matrix = calculate_taste_cost_matrix(info, np.array(placements))
+    initial_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.zeros((0, 2)), use_ext2=use_ext2)
     top_k = len(info.musicians)
     top_placements = np.argsort(initial_matrix, axis=0)[::-1, :]
     top_placements = np.unique(top_placements[:top_k].flatten())
     placements = [placements[p] for p in top_placements]
-    initial_matrix = calculate_taste_cost_matrix(info, np.array(placements))
+    initial_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.zeros((0, 2)), use_ext2=use_ext2)
     im = np.argmax(initial_matrix)
     num_tastes = initial_matrix.shape[1]
     instr = im % num_tastes
@@ -40,8 +47,8 @@ def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e
     recalc_every = max(1, len(info.musicians) // num_recalc_step)
     while musicians_placed < len(info.musicians):
         print(musicians_placed, placed[-1], instruments[-1])
-        if musicians_placed % recalc_every == 0:
-            next_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.array(placed))
+        if musicians_placed % recalc_every == 0 or musicians_placed < first_recalcs:
+            next_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.array(placed), use_ext2=use_ext2)
         for ins, num in num_musicians_per_instrument.items():
             if num < 1:
                 next_matrix[:, ins] = -1e6
@@ -52,7 +59,10 @@ def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e
         pos = im // num_tastes
         print(next_matrix[pos, instr])
         if next_matrix[pos, instr] < 1e-9:
-            recalc_every = 1e10
+            if next_matrix[pos, instr] < 0:
+                recalc_every = 1
+            else:
+                recalc_every = 1e10
         placed.append(placements[pos])
         instruments.append(instr)
         del placements[pos]
@@ -96,5 +106,12 @@ if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
     with Pool(10) as p:
-        for _ in p.imap(partial(solve, num_recalc_step=57, solutions_prefix='recal_step_57_full_p'), range(56, 91)):
+        for _ in p.imap(
+                partial(solve,
+                        num_recalc_step=57,
+                        first_recalcs=0,
+                        use_ext2=True,
+                        solutions_prefix='recal_step_57_ext2_full_p'),
+                range(56, 91)
+        ):
             pass
