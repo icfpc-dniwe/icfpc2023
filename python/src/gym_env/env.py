@@ -121,7 +121,7 @@ class MusicianPlacementEnv(gym.Env):
         self.musician_placements[self.musicians_placed] = np.array(next_placement)
         self.musicians_placed += 1
         # print(self.musician_placements.shape)
-        if not check_positions_valid(self.musician_placements, xmin, xmax, ymin, ymax):
+        if not check_positions_valid(self.musician_placements[:self.musicians_placed], xmin, xmax, ymin, ymax):
             reward = -1e7
             done = True
             attendee_happiness = np.zeros((len(self.attendees),), dtype=np.float32)
