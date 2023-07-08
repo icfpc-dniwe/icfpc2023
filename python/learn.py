@@ -10,7 +10,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 if __name__ == '__main__':
     num_steps = 1_000_000
-    problem_id = 55
+    problem_id = 10
     info = read_problem(Path(f'../problems/json/{problem_id}.json'))
     solution = load_solution(Path(f'../solutions/recal_step_57/{problem_id}.json'))
     initial_placements = np.array([[p.x, p.y] for p in solution.placements], dtype=np.float32)
@@ -31,14 +31,13 @@ if __name__ == '__main__':
         # n_envs=4,
         # n_timesteps=2e6,
         ent_coef=0.0,
-        max_grad_norm=0.5,
-        n_steps=8,
+        max_grad_norm=2,
+        n_steps=5,
         gae_lambda=0.9,
         vf_coef=0.4,
         gamma=0.99,
-        use_rms_prop=True,
+        use_rms_prop=False,
         normalize_advantage=False,
-        # Both works
         learning_rate=3e-4,
         use_sde=True
     )
@@ -57,9 +56,10 @@ if __name__ == '__main__':
         obs, rewards, dones, _ = env.step(action)
         env.render("human")
         # print(action, rewards, dones)
-        if rewards[0] > my_result:
-            print('New best!', rewards)
+        # if rewards[0] > my_result:
+        #     print('New best!', rewards)
         print(action, rewards, dones)
+        input()
         if np.all(dones):
             break
     input()

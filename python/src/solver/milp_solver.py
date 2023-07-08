@@ -30,16 +30,23 @@ def calculate_taste_cost_matrix_with_blockers(
 ) -> np.ndarray:
     attendee_placements = np.array([(a.x, a.y) for a in problem_info.attendees])
     attendee_tastes = np.array([[taste for taste in a.tastes] for a in problem_info.attendees])
+    pillar_centers = np.array([(p.x, p.y) for p in problem_info.pillars])
+    pillar_radius = np.array([p.radius for p in problem_info.pillars])
     num_tastes = attendee_tastes.shape[1]
     distance_matrix = cdist(placements, attendee_placements, 'euclidean') ** 2
     musician_not_blocked = np.zeros(distance_matrix.shape, dtype=np.bool_)
     for cur_attendee_idx in range(len(attendee_placements)):
+        segments = (placements, np.repeat(attendee_placements[cur_attendee_idx][np.newaxis, :],
+                                          placements.shape[0]).reshape((2, placements.shape[0])).T)
         cur_not_blocked = np.all(distances_to_segments(
             already_placed,
-            (placements, np.repeat(attendee_placements[cur_attendee_idx][np.newaxis, :],
-                                   placements.shape[0]).reshape((2, placements.shape[0])).T)
+            segments
         ) > 5, axis=0)
-        musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked
+        pillar_blocked = np.all(distances_to_segments(
+            pillar_centers,
+            segments
+        ) > pillar_radius[:, np.newaxis], axis=0)
+        musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked & pillar_blocked
     taste_cost = np.zeros((distance_matrix.shape[0], num_tastes), dtype=np.float64)
     for cur_taste in range(num_tastes):
         taste_cost[:, cur_taste] = (np.ceil(1000000 * attendee_tastes[:, cur_taste] / distance_matrix)

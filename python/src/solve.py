@@ -10,7 +10,7 @@ from functools import partial
 
 
 def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e2, solutions_prefix: str = 'nonte'):
-    problem_path = Path('../problems/json/') / f'{problem_id}.json'
+    problem_path = Path('../problems/full_round/') / f'{problem_id}.json'
     save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
     save_path.parent.mkdir(exist_ok=True, parents=True)
     info = read_problem(problem_path)
@@ -20,7 +20,7 @@ def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e
     placements = list(zip(xs.flatten(), ys.flatten()))
     num_musicians_per_instrument = {ins: num for ins, num in zip(*np.unique(info.musicians, return_counts=True))}
     initial_matrix = calculate_taste_cost_matrix(info, np.array(placements))
-    top_k = len(info.musicians) * 3
+    top_k = len(info.musicians)
     top_placements = np.argsort(initial_matrix, axis=0)[::-1, :]
     top_placements = np.unique(top_placements[:top_k].flatten())
     placements = [placements[p] for p in top_placements]
@@ -96,5 +96,5 @@ if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
     with Pool(10) as p:
-        for _ in p.imap(partial(solve, num_recalc_step=57, solutions_prefix='recal_step_57_dist_heuristics'), range(50, 56)):
+        for _ in p.imap(partial(solve, num_recalc_step=57, solutions_prefix='recal_step_57_full_p'), range(56, 91)):
             pass

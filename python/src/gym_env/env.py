@@ -14,7 +14,8 @@ class MusicianPlacementEnv(gym.Env):
             render_mode=None,
             calculate_happiness_for_all: bool = False,
             reward_mult: float = 1e-7,
-            initial_placements=None
+            initial_placements=None,
+            skip_instead_of_fail: bool = False
     ):
         super(MusicianPlacementEnv, self).__init__()
 
@@ -32,6 +33,7 @@ class MusicianPlacementEnv(gym.Env):
         self.attendees = problem_info.attendees
         self.calculate_happiness_for_all = calculate_happiness_for_all
         self.reward_mult = reward_mult
+        self.skip_instead_of_fail = skip_instead_of_fail
         self.initial_placements = initial_placements
 
         self.num_musicians = len(self.musicians)
@@ -40,7 +42,6 @@ class MusicianPlacementEnv(gym.Env):
         self.musicians_placed = 0
         self.attendee_placements = np.array([(a.x, a.y) for a in self.attendees]).astype(np.float32)
         self.attendee_tastes = np.array([[taste for taste in a.tastes] for a in self.attendees]).astype(np.float32)
-        self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
         if self.initial_placements is None:
             self.musician_placements = self.generate_valid_placements(self.num_musicians)
         else:
@@ -55,6 +56,7 @@ class MusicianPlacementEnv(gym.Env):
         mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
         mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
         att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
+        self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Dict({
             'musicians_placed': spaces.Discrete(len(self.musicians)),
             'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
@@ -149,6 +151,8 @@ class MusicianPlacementEnv(gym.Env):
         # print(next_placement)
         self.musician_placements[self.musicians_placed] = np.array(next_placement)
         self.musicians_placed += 1
+        if self.musicians_placed >= len(self.musicians):
+            self.musicians_placed = 0
         # print(self.musician_placements.shape)
         if not check_positions_valid(self.musician_placements[:self.musicians_placed], xmin, xmax, ymin, ymax):
             reward = 0
@@ -174,9 +178,9 @@ class MusicianPlacementEnv(gym.Env):
                 )
             reward = attendee_happiness.sum() * self.reward_mult
             tmp = reward
-            reward = (reward - self.prev_reward) + 10
+            reward = max(0, (reward - self.prev_reward) + 1) ** 4
             self.prev_reward = tmp
-            done = self.musicians_placed >= len(self.musicians)
+            done = False  # self.musicians_placed >= len(self.musicians)
             is_success = done
 
         # Assemble the observation

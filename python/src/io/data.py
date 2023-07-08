@@ -1,6 +1,6 @@
 from pathlib import Path
 import json
-from src.mytypes import ProblemInfo, ProblemSolution, Room, Stage, Placement, Attendee
+from src.mytypes import ProblemInfo, ProblemSolution, Room, Stage, Placement, Attendee, Pillar
 
 
 def read_problem(json_path: Path) -> ProblemInfo:
@@ -12,7 +12,9 @@ def read_problem(json_path: Path) -> ProblemInfo:
                     bottom_x=info['stage_bottom_left'][0], bottom_y=info['stage_bottom_left'][1]),
         musicians=info['musicians'],
         attendees=[Attendee(x=cur_att['x'], y=cur_att['y'], tastes=cur_att['tastes'])
-                   for cur_att in info['attendees']]
+                   for cur_att in info['attendees']],
+        pillars=[Pillar(x=cur_p['center'][0], y=cur_p['center'][1], radius=cur_p['radius'])
+                 for cur_p in info['pillars']]
     )
 
 
