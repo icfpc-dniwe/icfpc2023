@@ -3,13 +3,15 @@ import numpy as np
 from src.solver.milp_solver import calculate_taste_cost_matrix, calculate_taste_cost_matrix_with_blockers
 from src.solver.placement import get_placements, get_placements_hexagonal, placements_to_solution
 from src.io.data import read_problem, save_solution
+from src.solver.metric import check_positions_valid, calculate_happiness
 from multiprocessing import Pool
 from functools import partial
 
 
-def solve(problem_id: int, recalc_step: int = 10):
+def solve(problem_id: int, num_recalc_step: int = 10, solutions_prefix: str = 'nonte'):
     problem_path = Path('../problems/json/') / f'{problem_id}.json'
-    save_path = Path('../solutions/') / f'{problem_id}.json'
+    save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
+    save_path.parent.mkdir(exist_ok=True, parents=True)
     info = read_problem(problem_path)
     xs, ys = get_placements(info.stage.width, info.stage.height)
     xs += info.stage.bottom_x
@@ -34,7 +36,7 @@ def solve(problem_id: int, recalc_step: int = 10):
     # cached_matrix = initial_matrix.copy()
     next_matrix = initial_matrix.copy()
     next_matrix = np.delete(next_matrix, pos, axis=0)
-    recalc_every = len(info.musicians) // recalc_step
+    recalc_every = max(1, len(info.musicians) // num_recalc_step)
     while musicians_placed < len(info.musicians):
         print(musicians_placed, placed[-1], instruments[-1])
         if musicians_placed % recalc_every == 0:
@@ -68,8 +70,28 @@ def solve(problem_id: int, recalc_step: int = 10):
     save_solution(placements_to_solution(sorted_placements), save_path)
 
 
+def random_solver(problem_id: int, solutions_prefix: str = 'random'):
+    problem_path = Path('../problems/json/') / f'{problem_id}.json'
+    save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
+    save_path.parent.mkdir(exist_ok=True, parents=True)
+    info = read_problem(problem_path)
+    positions = []
+    xmin, ymin = info.stage.bottom_x, info.stage.bottom_y
+    xmax, ymax = xmin + info.stage.width, ymin + info.stage.height
+    for cur_musician in info.musicians:
+        while True:
+            new_pos_x = np.random.uniform(xmin + 10, xmax - 10)
+            new_pos_y = np.random.uniform(xmin + 10, xmax - 10)
+            if check_positions_valid(np.array(positions + [(new_pos_x, new_pos_y)]), xmin, xmax, ymin, ymax):
+                positions.append((new_pos_x, new_pos_y))
+                break
+    assert len(positions) == len(info.musicians)
+    save_solution(placements_to_solution(positions), save_path)
+
+
 if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
-    with Pool(4) as p:
-        p.map(partial(solve, recalc_step=25), range(11, 56))
+    with Pool(3) as p:
+        for _ in p.imap(partial(random_solver, solutions_prefix='random'), [19, 22, 23, 24, 25, 26, 27, 28, 40, 41, 42, 43, 44, 45, 46, 49, 51, 52, 55]):
+            pass
