@@ -46,7 +46,7 @@ class MusicianPlacementEnv(gym.Env):
             'attendee_placements': spaces.Box(low=0, high=att_high,
                                               shape=(self.num_attendees, 2), dtype=np.float32),
             'attendee_happiness': spaces.Box(low=-1e10, high=1e10, shape=(self.num_attendees,), dtype=np.int32),
-            'attendee_tastes': spaces.Box(low=-1e6, high=1e6, shape=self.attendee_tastes.shape, dtype=np.float32)
+            # 'attendee_tastes': spaces.Box(low=-1e6, high=1e6, shape=self.attendee_tastes.shape, dtype=np.float32)
         })
 
         self.screen = None
@@ -110,7 +110,7 @@ class MusicianPlacementEnv(gym.Env):
             'musician_placements': self.musician_placements.copy(),
             'musician_instruments': self.musicians.copy(),
             'attendee_placements': self.attendee_placements.copy(),
-            'attendee_tastes': self.attendee_tastes.copy(),
+            # 'attendee_tastes': self.attendee_tastes.copy(),
             'attendee_happiness': happiness
         }
         return observation, {}
@@ -156,7 +156,7 @@ class MusicianPlacementEnv(gym.Env):
             'musician_placements': self.musician_placements.copy(),
             'musician_instruments': self.musicians.copy(),
             'attendee_placements': self.attendee_placements.copy(),
-            'attendee_tastes': self.attendee_tastes.copy(),
+            # 'attendee_tastes': self.attendee_tastes.copy(),
             'attendee_happiness': attendee_happiness
         }
 
