@@ -19,7 +19,7 @@ def calculate_taste_cost_matrix(problem_info: ProblemInfo, placements: t.Optiona
     distance_matrix = cdist(placements, attendee_placements, 'euclidean') ** 2
     taste_cost = np.zeros((distance_matrix.shape[0], num_tastes), dtype=np.float64)
     for cur_taste in range(num_tastes):
-        taste_cost[:, cur_taste] = (attendee_tastes[:, cur_taste] / distance_matrix).sum(axis=1)
+        taste_cost[:, cur_taste] = np.ceil(1000000 * attendee_tastes[:, cur_taste] / distance_matrix).sum(axis=1)
     return taste_cost
 
 
@@ -42,7 +42,7 @@ def calculate_taste_cost_matrix_with_blockers(
         musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked
     taste_cost = np.zeros((distance_matrix.shape[0], num_tastes), dtype=np.float64)
     for cur_taste in range(num_tastes):
-        taste_cost[:, cur_taste] = ((attendee_tastes[:, cur_taste] / distance_matrix)
+        taste_cost[:, cur_taste] = (np.ceil(1000000 * attendee_tastes[:, cur_taste] / distance_matrix)
                                     * musician_not_blocked).sum(axis=1)
     return taste_cost
 

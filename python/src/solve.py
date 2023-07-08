@@ -4,16 +4,17 @@ from src.solver.milp_solver import calculate_taste_cost_matrix, calculate_taste_
 from src.solver.placement import get_placements, get_placements_hexagonal, placements_to_solution
 from src.io.data import read_problem, save_solution
 from src.solver.metric import check_positions_valid, calculate_happiness
+from scipy.spatial.distance import cdist, pdist
 from multiprocessing import Pool
 from functools import partial
 
 
-def solve(problem_id: int, num_recalc_step: int = 10, solutions_prefix: str = 'nonte'):
+def solve(problem_id: int, num_recalc_step: int = 10, distance_coeff: float = 1e2, solutions_prefix: str = 'nonte'):
     problem_path = Path('../problems/json/') / f'{problem_id}.json'
     save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
     save_path.parent.mkdir(exist_ok=True, parents=True)
     info = read_problem(problem_path)
-    xs, ys = get_placements_hexagonal(info.stage.width, info.stage.height)
+    xs, ys = get_placements(info.stage.width, info.stage.height)
     xs += info.stage.bottom_x
     ys += info.stage.bottom_y
     placements = list(zip(xs.flatten(), ys.flatten()))
@@ -44,6 +45,8 @@ def solve(problem_id: int, num_recalc_step: int = 10, solutions_prefix: str = 'n
         for ins, num in num_musicians_per_instrument.items():
             if num < 1:
                 next_matrix[:, ins] = -1e6
+        # placements_distance = cdist(np.array(placements), np.array(placed), 'euclidean').mean(axis=1, keepdims=True)
+        # next_matrix += distance_coeff * placements_distance
         im = np.argmax(next_matrix)
         instr = im % num_tastes
         pos = im // num_tastes
@@ -93,5 +96,5 @@ if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
     with Pool(10) as p:
-        for _ in p.imap(partial(solve, num_recalc_step=100, solutions_prefix='hex_recal_step_100'), [1, 2, 6, 8, 11, 12, 29, 30, 48, 53]):
+        for _ in p.imap(partial(solve, num_recalc_step=57, solutions_prefix='recal_step_57_dist_heuristics'), range(50, 56)):
             pass
