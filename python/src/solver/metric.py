@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from scipy.spatial.distance import cdist, pdist
+from scipy.spatial.distance import cdist, pdist, squareform
 from src.solver.geometry import get_line_coefficients, distance_to_line, distances_to_segments
 import typing as t
 
@@ -40,6 +40,8 @@ def calculate_happiness(
         instruments: np.ndarray,
         attendees: np.ndarray,
         attendee_tastes: np.ndarray,
+        pillars: t.Optional[np.ndarray] = None,
+        use_ext2: bool = False,
         reduce: str = 'sum'
 ) -> t.Union[float, np.ndarray]:
     """
@@ -47,10 +49,12 @@ def calculate_happiness(
     :param instruments: NDArray with Mx1 shape. Every row is (Instrument,)
     :param attendees: NDArray with Ax2 shape. Every row is (X, Y)
     :param attendee_tastes: NDArray with AxT shape. Every row is tastes for a particular attendee
+    :param pillars: NDArray with Px3 shape. Every row is (X, Y, R)
+    :param use_ext2: bool, whether to use extension2 of the rules
     :param reduce: either 'sum' or 'none'
     :return: happiness score
     """
-    total_happiness = np.zeros((len(attendees,)))
+    total_happiness = np.zeros((len(attendees), len(musicians)))
     distances_sqr = cdist(attendees, musicians, 'euclidean') ** 2
     for cur_attendee_idx in range(attendees.shape[0]):
         musician_not_blocked = np.all((distances_to_segments(
@@ -58,9 +62,19 @@ def calculate_happiness(
             (musicians, np.repeat(attendees[cur_attendee_idx][np.newaxis, :],
                                   musicians.shape[0]).reshape((2, musicians.shape[0])).T)
         ) + np.eye(musicians.shape[0]) * 100) > 5, axis=0)
+        if pillars is not None:
+            pass
         cur_tastes = attendee_tastes[cur_attendee_idx]
         attendee_happiness = np.ceil(1000000 * cur_tastes[instruments] * musician_not_blocked / distances_sqr[cur_attendee_idx])
-        total_happiness[cur_attendee_idx] = attendee_happiness.sum()
+        total_happiness[cur_attendee_idx] = attendee_happiness
+    if use_ext2:
+        musician_distances = squareform(pdist(musicians, 'euclidean')) + np.eye(len(musicians))
+        instruments_tiled = np.tile(instruments[np.newaxis, :], (len(instruments), 1))
+        musicians_same_instrument = instruments_tiled == instruments_tiled.T
+        q = 1 + ((1 / musician_distances) * musicians_same_instrument
+                 - np.eye(len(musicians))).sum(axis=0, keepdims=True)
+        total_happiness = np.ceil(total_happiness * q)
+    total_happiness = total_happiness.sum(axis=1)
     if reduce == 'sum':
         return total_happiness.sum()
     elif reduce == 'none':

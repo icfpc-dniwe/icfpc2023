@@ -51,3 +51,7 @@ def test_calculate_happiness():
     example_result = 5343
     assert np.isclose(calculate_happiness(example_musicians_pos, example_instruments,
                                           example_attendee_positions, example_tastes), example_result)
+    result_with_ext2 = 5357.0
+    assert np.isclose(calculate_happiness(example_musicians_pos, example_instruments,
+                                          example_attendee_positions, example_tastes,
+                                          use_ext2=True), result_with_ext2)
