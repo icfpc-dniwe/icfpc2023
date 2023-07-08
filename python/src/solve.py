@@ -13,7 +13,7 @@ def solve(problem_id: int, num_recalc_step: int = 10, solutions_prefix: str = 'n
     save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
     save_path.parent.mkdir(exist_ok=True, parents=True)
     info = read_problem(problem_path)
-    xs, ys = get_placements(info.stage.width, info.stage.height)
+    xs, ys = get_placements_hexagonal(info.stage.width, info.stage.height)
     xs += info.stage.bottom_x
     ys += info.stage.bottom_y
     placements = list(zip(xs.flatten(), ys.flatten()))
@@ -92,6 +92,6 @@ def random_solver(problem_id: int, solutions_prefix: str = 'random'):
 if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
-    with Pool(3) as p:
-        for _ in p.imap(partial(random_solver, solutions_prefix='random'), [19, 22, 23, 24, 25, 26, 27, 28, 40, 41, 42, 43, 44, 45, 46, 49, 51, 52, 55]):
+    with Pool(10) as p:
+        for _ in p.imap(partial(solve, num_recalc_step=100, solutions_prefix='hex_recal_step_100'), [1, 2, 6, 8, 11, 12, 29, 30, 48, 53]):
             pass
