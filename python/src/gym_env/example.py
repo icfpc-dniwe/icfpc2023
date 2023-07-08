@@ -10,7 +10,7 @@ obs = env.reset()
 done = False
 while not done:
     action = np.random.uniform(low=0, high=1, size=(2,))
-    obs, reward, done, _ = env.step(action)
+    obs, reward, done, _, _ = env.step(action)
     print(reward, done)
     env.render()
 env.close()

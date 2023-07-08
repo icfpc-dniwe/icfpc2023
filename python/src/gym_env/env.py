@@ -127,7 +127,7 @@ class MusicianPlacementEnv(gym.Env):
             'attendee_happiness': attendee_happiness
         }
 
-        return observation, reward, done, {}
+        return observation, reward, done, False, {}
 
     def render(self):
         self.screen.fill(self.colors['white'])
