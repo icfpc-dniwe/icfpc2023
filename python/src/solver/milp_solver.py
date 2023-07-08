@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import cdist
-from scipy.optimize import milp, LinearConstraint, Bounds
+from scipy.optimize import LinearConstraint, Bounds
 from src.mytypes import ProblemInfo
 from src.solver.geometry import distances_to_segments
 from src.solver.placement import get_placements

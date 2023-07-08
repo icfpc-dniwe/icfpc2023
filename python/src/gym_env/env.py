@@ -119,7 +119,8 @@ class MusicianPlacementEnv(gym.Env):
     def close(self):
         pygame.quit()
 
-    def check_line_intersection(self, p1, p2, p3, p4):
+    @staticmethod
+    def check_line_intersection(p1, p2, p3, p4):
         def ccw(p1, p2, p3):
             return (p3[1] - p1[1]) * (p2[0] - p1[0]) > (p2[1] - p1[1]) * (p3[0] - p1[0])
 

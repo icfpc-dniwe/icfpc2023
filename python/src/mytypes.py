@@ -14,10 +14,10 @@ Placement = t.NamedTuple('Placement', [('x', float), ('y', float)])
 class ProblemInfo:
     room: Room
     stage: Stage
-    musicians: t.Iterable[int]
-    attendees: t.Iterable[Attendee]
+    musicians: t.Sequence[int]
+    attendees: t.Sequence[Attendee]
 
 
 @dataclass
 class ProblemSolution:
-    placements: t.List[Placement]
+    placements: t.Sequence[Placement]
