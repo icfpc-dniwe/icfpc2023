@@ -1,5 +1,5 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import pygame
 import numpy as np
 from src.solver.metric import calculate_happiness, check_positions_valid
@@ -27,14 +27,18 @@ class MusicianPlacementEnv(gym.Env):
         self.num_musicians = len(self.musicians)
         self.num_attendees = len(self.attendees)
 
-        self.musician_placements = None
-        self.attendee_placements = np.array([(a.x, a.y) for a in self.attendees])
-        self.attendee_tastes = np.array([[taste for taste in a.tastes] for a in self.attendees])
+        self.musician_placements = np.zeros((self.num_musicians, 2), dtype=np.float32)
+        self.musician_placements[:, 0] += xmin
+        self.musician_placements[:, 1] += ymin
+        self.musicians_placed = 0
+        self.attendee_placements = np.array([(a.x, a.y) for a in self.attendees]).astype(np.float32)
+        self.attendee_tastes = np.array([[taste for taste in a.tastes] for a in self.attendees]).astype(np.float32)
         self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
         mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
         mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
         att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
         self.observation_space = spaces.Dict({
+            'musicians_placed': spaces.Discrete(len(self.musicians)),
             'musician_placements': spaces.Box(low=mus_low, high=mus_high,
                                               shape=(self.num_musicians, 2), dtype=np.float32),
             'attendee_placements': spaces.Box(low=0, high=att_high,
@@ -73,30 +77,38 @@ class MusicianPlacementEnv(gym.Env):
         super().reset(seed=seed)
         # Initialize musician placements randomly
         initial_musicians = 0
+        self.musicians_placed = 0
         if options is None:
             initial_musicians = 0
         elif options['place_musicians']:
             initial_musicians = np.random.randint(0, self.num_musicians - 1)
         if initial_musicians > 0:
-            self.musician_placements = self.generate_valid_placements(initial_musicians)
-            self.musician_placements[:, 0] = self.musician_placements[:, 0] * self.stage_width + self.stage_bottom_left[0]
-            self.musician_placements[:, 1] = self.musician_placements[:, 1] * self.stage_height + self.stage_bottom_left[1]
+            self.musicians_placed = initial_musicians
+            self.musician_placements[:self.musicians_placed] = self.generate_valid_placements(initial_musicians)
+            self.musician_placements[:self.musicians_placed, 0] = \
+                self.musician_placements[:, 0] * self.stage_width + self.stage_bottom_left[0]
+            self.musician_placements[:self.musicians_placed, 1] = \
+                self.musician_placements[:, 1] * self.stage_height + self.stage_bottom_left[1]
         else:
-            self.musician_placements = np.zeros((0, 2), dtype=np.float32)
+            xmin = self.stage_bottom_left[0]
+            ymin = self.stage_bottom_left[1]
+            self.musician_placements = np.zeros((self.num_musicians, 2), dtype=np.float32)
+            self.musician_placements[:, 0] += xmin
+            self.musician_placements[:, 1] += ymin
 
         observation = {
+            'musicians_placed': self.musicians_placed,
             'musician_placements': self.musician_placements.copy(),
             'attendee_placements': self.attendee_placements.copy(),
             'attendee_happiness': calculate_happiness(
-                self.musician_placements,
-                self.musicians[:initial_musicians],
+                self.musician_placements[:self.musicians_placed],
+                self.musicians[:self.musicians_placed],
                 self.attendee_placements,
                 self.attendee_tastes,
                 reduce='none'
-            )
+            ).astype(np.float32)
         }
-        info = {}
-        return observation, info
+        return observation, {}
 
     def step(self, action):
         xmin, ymin = self.stage_bottom_left
@@ -106,25 +118,27 @@ class MusicianPlacementEnv(gym.Env):
         next_placement[1] = next_placement[1] * (self.stage_height - 20) + ymin + 10
         # print(self.musician_placements.shape)
         # print(next_placement)
-        self.musician_placements = np.concatenate((self.musician_placements, [next_placement]), axis=0)
+        self.musician_placements[self.musicians_placed] = np.array(next_placement)
+        self.musicians_placed += 1
         # print(self.musician_placements.shape)
         if not check_positions_valid(self.musician_placements, xmin, xmax, ymin, ymax):
             reward = -1e7
             done = True
-            attendee_happiness = np.zeros((len(self.attendees),))
+            attendee_happiness = np.zeros((len(self.attendees),), dtype=np.float32)
         else:
             attendee_happiness = calculate_happiness(
-                self.musician_placements,
-                self.musicians[:len(self.musician_placements)],
+                self.musician_placements[:self.musicians_placed],
+                self.musicians[:self.musicians_placed],
                 self.attendee_placements,
                 self.attendee_tastes,
                 reduce='none'
-            )
+            ).astype(np.float32)
             reward = attendee_happiness.sum()
-            done = len(self.musician_placements) >= len(self.musicians)
+            done = self.musicians_placed >= len(self.musicians)
 
         # Assemble the observation
         observation = {
+            'musicians_placed': self.musicians_placed,
             'musician_placements': self.musician_placements.copy(),
             'attendee_placements': self.attendee_placements.copy(),
             'attendee_happiness': attendee_happiness
@@ -193,4 +207,4 @@ class MusicianPlacementEnv(gym.Env):
                 if check_positions_valid(np.array(placed + [(next_x, next_y)]), xmin, xmax, ymin, ymax):
                     break
             placed.append((next_x, next_y))
-        return np.array(placed)
+        return np.array(placed, dtype=np.float32)
