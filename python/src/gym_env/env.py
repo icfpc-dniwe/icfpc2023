@@ -8,7 +8,14 @@ from src.mytypes import ProblemInfo
 class MusicianPlacementEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 1}
 
-    def __init__(self, problem_info: ProblemInfo, render_mode=None, calculate_happiness_for_all: bool = False):
+    def __init__(
+            self,
+            problem_info: ProblemInfo,
+            render_mode=None,
+            calculate_happiness_for_all: bool = False,
+            reward_mult: float = 1e-7,
+            initial_placements=None
+    ):
         super(MusicianPlacementEnv, self).__init__()
 
         self.render_mode = render_mode
@@ -24,6 +31,8 @@ class MusicianPlacementEnv(gym.Env):
         self.musicians = np.array(problem_info.musicians, dtype=np.int32)
         self.attendees = problem_info.attendees
         self.calculate_happiness_for_all = calculate_happiness_for_all
+        self.reward_mult = reward_mult
+        self.initial_placements = initial_placements
 
         self.num_musicians = len(self.musicians)
         self.num_attendees = len(self.attendees)
@@ -32,8 +41,17 @@ class MusicianPlacementEnv(gym.Env):
         self.attendee_placements = np.array([(a.x, a.y) for a in self.attendees]).astype(np.float32)
         self.attendee_tastes = np.array([[taste for taste in a.tastes] for a in self.attendees]).astype(np.float32)
         self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
-        self.musician_placements = self.generate_valid_placements(self.num_musicians)
-        self.prev_reward = 0
+        if self.initial_placements is None:
+            self.musician_placements = self.generate_valid_placements(self.num_musicians)
+        else:
+            self.musician_placements = self.initial_placements.copy()
+        self.prev_reward = self.reward_mult * calculate_happiness(
+                    self.musician_placements,
+                    self.musicians,
+                    self.attendee_placements,
+                    self.attendee_tastes,
+                    reduce='sum'
+                )
         mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
         mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
         att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
@@ -80,9 +98,11 @@ class MusicianPlacementEnv(gym.Env):
         super().reset(seed=seed)
         # Initialize musician placements randomly
         initial_musicians = 0
-        self.prev_reward = 0
         self.musicians_placed = 0
-        self.musician_placements = self.generate_valid_placements(self.num_musicians)
+        if self.initial_placements is None:
+            self.musician_placements = self.generate_valid_placements(self.num_musicians)
+        else:
+            self.musician_placements = self.initial_placements.copy()
         if options is None:
             initial_musicians = 0
         elif options['place_musicians']:
@@ -98,13 +118,17 @@ class MusicianPlacementEnv(gym.Env):
                 reduce='none'
             )
         else:
-            happiness = calculate_happiness(
-                self.musician_placements[:self.musicians_placed],
-                self.musicians[:self.musicians_placed],
-                self.attendee_placements,
-                self.attendee_tastes,
-                reduce='none'
-            )
+            if self.musicians_placed > 0:
+                happiness = calculate_happiness(
+                    self.musician_placements[:self.musicians_placed],
+                    self.musicians[:self.musicians_placed],
+                    self.attendee_placements,
+                    self.attendee_tastes,
+                    reduce='none'
+                )
+            else:
+                happiness = np.zeros((self.num_attendees,), dtype=np.int32)
+        self.prev_reward = self.reward_mult * happiness.sum()
         observation = {
             'musicians_placed': self.musicians_placed,
             'musician_placements': self.musician_placements.copy(),
@@ -127,8 +151,9 @@ class MusicianPlacementEnv(gym.Env):
         self.musicians_placed += 1
         # print(self.musician_placements.shape)
         if not check_positions_valid(self.musician_placements[:self.musicians_placed], xmin, xmax, ymin, ymax):
-            reward = int(-1e10)
+            reward = 0
             done = True
+            is_success = False
             attendee_happiness = np.zeros((len(self.attendees),), dtype=np.float32)
         else:
             if self.calculate_happiness_for_all:
@@ -147,8 +172,12 @@ class MusicianPlacementEnv(gym.Env):
                     self.attendee_tastes,
                     reduce='none'
                 )
-            reward = int(attendee_happiness.sum())
+            reward = attendee_happiness.sum() * self.reward_mult
+            tmp = reward
+            reward = (reward - self.prev_reward) + 10
+            self.prev_reward = tmp
             done = self.musicians_placed >= len(self.musicians)
+            is_success = done
 
         # Assemble the observation
         observation = {
@@ -160,7 +189,11 @@ class MusicianPlacementEnv(gym.Env):
             'attendee_happiness': attendee_happiness
         }
 
-        return observation, reward, done, False, {}
+        if done:
+            info = {'is_success': is_success}
+        else:
+            info = {}
+        return observation, reward, done, False, info
 
     def render(self):
         if self.screen is not None:

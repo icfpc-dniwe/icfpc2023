@@ -16,6 +16,12 @@ def read_problem(json_path: Path) -> ProblemInfo:
     )
 
 
+def load_solution(json_path: Path) -> ProblemSolution:
+    with json_path.open('r') as f:
+        placements = json.load(f)
+    return ProblemSolution(placements=[Placement(x=p['x'], y=p['y']) for p in placements['placements']])
+
+
 def save_solution(solution: ProblemSolution, save_path: Path) -> None:
     dict_out = {
         'placements': [
