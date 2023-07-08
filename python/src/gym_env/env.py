@@ -6,7 +6,7 @@ from src.solver.metric import calculate_happiness, check_positions_valid
 from src.mytypes import ProblemInfo
 
 class MusicianPlacementEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 1}
 
     def __init__(self, problem_info: ProblemInfo):
         super(MusicianPlacementEnv, self).__init__()
@@ -41,8 +41,9 @@ class MusicianPlacementEnv(gym.Env):
             'attendee_happiness': spaces.Box(low=-1e6, high=1e6, shape=(self.num_attendees,), dtype=np.float32)
         })
 
-        self.screen_width = 800
-        self.screen_height = 600
+        self.screen_width = 1920
+        self.screen_height = 1080
+        self.render_scale = max(self.screen_height / self.room_height, self.screen_width / self.room_width)
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
@@ -59,7 +60,7 @@ class MusicianPlacementEnv(gym.Env):
             'purple': (255, 0, 255)
         }
 
-        self.radius = 10
+        self.radius = 5
         self.stage_color = self.colors['gray']
         self.attendee_color = self.colors['blue']
         self.musician_color = self.colors['green']
@@ -133,25 +134,32 @@ class MusicianPlacementEnv(gym.Env):
 
         # Draw room
         pygame.draw.rect(self.screen, self.colors['black'],
-                         (0, 0, self.room_width, self.room_height), 2)
+                         (0, 0, int(self.render_scale * self.room_width), int(self.render_scale * self.room_height)), 2)
 
         # Draw stage
         stage_x = self.stage_bottom_left[0]
         # stage_y = self.room_height - self.stage_bottom_left[1] - self.stage_height
         stage_y = self.stage_bottom_left[1]
         pygame.draw.rect(self.screen, self.stage_color,
-                         (stage_x, stage_y, self.stage_width, self.stage_height))
+                         (int(self.render_scale * stage_x),
+                          int(self.render_scale * stage_y),
+                          int(self.render_scale * self.stage_width),
+                          int(self.render_scale * self.stage_height)))
 
         # Draw musicians
         for i, musician in enumerate(self.musician_placements):
             musician_x = int(self.musician_placements[i, 0])
             musician_y = int(self.musician_placements[i, 1])
-            pygame.draw.circle(self.screen, self.musician_color, (musician_x, musician_y), self.radius)
+            pygame.draw.circle(self.screen, self.musician_color, (int(self.render_scale * musician_x),
+                                                                  int(self.render_scale * musician_y)),
+                               self.radius)
         # Draw attendees
         for i, attendee in enumerate(self.attendee_placements):
             attendee_x = int(attendee[0])
             attendee_y = int(attendee[1])
-            pygame.draw.circle(self.screen, self.attendee_color, (attendee_x, attendee_y), self.radius)
+            pygame.draw.circle(self.screen, self.attendee_color, (int(self.render_scale * attendee_x),
+                                                                  int(self.render_scale * attendee_y)),
+                               self.radius)
 
         pygame.display.flip()
         self.clock.tick(60)
