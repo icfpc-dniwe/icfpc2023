@@ -18,7 +18,7 @@ def solve(
         first_recalcs: int = 0,
         use_ext2: bool = False
 ):
-    problem_path = Path('../problems/full_round/') / f'{problem_id}.json'
+    problem_path = Path('../problems/json/') / f'{problem_id}.json'
     save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
     save_path.parent.mkdir(exist_ok=True, parents=True)
     info = read_problem(problem_path)
@@ -52,7 +52,7 @@ def solve(
             next_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.array(placed), use_ext2=use_ext2)
         for ins, num in num_musicians_per_instrument.items():
             if num < 1:
-                next_matrix[:, ins] = -1e6
+                next_matrix[:, ins] = -1e8
         # placements_distance = cdist(np.array(placements), np.array(placed), 'euclidean').mean(axis=1, keepdims=True)
         # next_matrix += distance_coeff * placements_distance
         im = np.argmax(next_matrix)
@@ -124,13 +124,13 @@ def try_milp_solver(problem_id: int, solutions_prefix: str = 'nonte', use_ext2: 
 if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
-    with Pool(10) as p:
-        for _ in p.imap(
+    with Pool(6) as p:
+        for _ in map(
                 partial(solve,
-                        num_recalc_step=7,
+                        num_recalc_step=1,
                         first_recalcs=0,
-                        use_ext2=True,
-                        solutions_prefix='recal_step_7_ext2_full_p'),
-                range(56, 91)
+                        use_ext2=False,
+                        solutions_prefix='recal_step_1_all'),
+                range(18, 19)
         ):
             pass

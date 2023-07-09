@@ -44,11 +44,14 @@ def calculate_taste_cost_matrix_with_blockers(
             already_placed,
             segments
         ) > 5, axis=0)
-        pillar_blocked = np.all(distances_to_segments(
-            pillar_centers,
-            segments
-        ) > pillar_radius[:, np.newaxis], axis=0)
-        musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked & pillar_blocked
+        if len(pillar_centers) > 0:
+            pillar_blocked = np.all(distances_to_segments(
+                pillar_centers,
+                segments
+            ) > pillar_radius[:, np.newaxis], axis=0)
+            musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked & pillar_blocked
+        else:
+            musician_not_blocked[:, cur_attendee_idx] = cur_not_blocked
     taste_cost = np.zeros((distance_matrix.shape[0], num_tastes), dtype=np.float64)
     if use_ext2:
         musician_distances = 1 / cdist(placements, already_placed, 'euclidean')
