@@ -1,5 +1,6 @@
 from pathlib import Path
 import numpy as np
+from scipy.optimize import Bounds, milp
 from src.solver.milp_solver import calculate_taste_cost_matrix, calculate_taste_cost_matrix_with_blockers
 from src.solver.placement import get_placements, get_placements_hexagonal, placements_to_solution
 from src.io.data import read_problem, save_solution
@@ -27,7 +28,7 @@ def solve(
     placements = list(zip(xs.flatten(), ys.flatten()))
     num_musicians_per_instrument = {ins: num for ins, num in zip(*np.unique(info.musicians, return_counts=True))}
     initial_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.zeros((0, 2)), use_ext2=use_ext2)
-    top_k = len(info.musicians)
+    top_k = len(info.musicians) * 3
     top_placements = np.argsort(initial_matrix, axis=0)[::-1, :]
     top_placements = np.unique(top_placements[:top_k].flatten())
     placements = [placements[p] for p in top_placements]
@@ -102,16 +103,34 @@ def random_solver(problem_id: int, solutions_prefix: str = 'random'):
     save_solution(placements_to_solution(positions), save_path)
 
 
+def try_milp_solver(problem_id: int, solutions_prefix: str = 'nonte', use_ext2: bool = False):
+    problem_path = Path('../problems/full_round/') / f'{problem_id}.json'
+    save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
+    save_path.parent.mkdir(exist_ok=True, parents=True)
+    info = read_problem(problem_path)
+    xs, ys = get_placements(info.stage.width, info.stage.height)
+    xs += info.stage.bottom_x
+    ys += info.stage.bottom_y
+    placements = list(zip(xs.flatten(), ys.flatten()))
+    num_musicians_per_instrument = {ins: num for ins, num in zip(*np.unique(info.musicians, return_counts=True))}
+    initial_matrix = calculate_taste_cost_matrix_with_blockers(info, np.array(placements), np.zeros((0, 2)),
+                                                               use_ext2=use_ext2)
+    top_k = len(info.musicians) * 3
+    top_placements = np.argsort(initial_matrix, axis=0)[::-1, :]
+    top_placements = np.unique(top_placements[:top_k].flatten())
+    new_placements = np.array([placements[p] for p in top_placements])
+
+
 if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
     with Pool(10) as p:
         for _ in p.imap(
                 partial(solve,
-                        num_recalc_step=57,
+                        num_recalc_step=7,
                         first_recalcs=0,
                         use_ext2=True,
-                        solutions_prefix='recal_step_57_ext2_full_p'),
+                        solutions_prefix='recal_step_7_ext2_full_p'),
                 range(56, 91)
         ):
             pass

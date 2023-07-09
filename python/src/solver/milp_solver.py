@@ -67,7 +67,7 @@ def create_constraints(musicians: t.Sequence[int], num_placements: int) -> t.Lis
     num_musicians_per_instrument = {inst: num for inst, num in zip(*np.unique(musicians, return_counts=True))}
     num_tastes = len(num_musicians_per_instrument)
     total_number = LinearConstraint(np.ones(num_placements * num_tastes, dtype=np.bool_),
-                                        np.array(num_musicians), np.array(num_musicians))
+                                    np.array(num_musicians), np.array(num_musicians))
     instrument_constraints = []
     for cur_instrument, cur_num in num_musicians_per_instrument.items():
         matrix = np.zeros((num_placements, num_tastes), dtype=np.bool_)

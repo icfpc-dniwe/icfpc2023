@@ -42,30 +42,27 @@ class MusicianPlacementEnv(gym.Env):
         self.musicians_placed = 0
         self.attendee_placements = np.array([(a.x, a.y) for a in self.attendees]).astype(np.float32)
         self.attendee_tastes = np.array([[taste for taste in a.tastes] for a in self.attendees]).astype(np.float32)
+        self.pillars = np.array([(p.x, p.y, p.radius) for p in problem_info.pillars], dtype=np.float32)
         if self.initial_placements is None:
-            self.musician_placements = self.generate_valid_placements(self.num_musicians)
+            self.musician_placements = None  # self.generate_valid_placements(self.num_musicians)
         else:
             self.musician_placements = self.initial_placements.copy()
-        self.prev_reward = self.reward_mult * calculate_happiness(
-                    self.musician_placements,
-                    self.musicians,
-                    self.attendee_placements,
-                    self.attendee_tastes,
-                    reduce='sum'
-                )
-        mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
-        mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
-        att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
+        self.prev_reward = None
+        mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1)).flatten()
+        mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1)).flatten()
+        att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1)).flatten()
+        pil_high = np.tile(np.array([[self.room_width, self.room_height, 100]]), (len(self.pillars), 1)).flatten()
         self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Dict({
             'musicians_placed': spaces.Discrete(len(self.musicians)),
-            'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
-                                               shape=(self.num_musicians,), dtype=np.int32),
+            # 'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
+            #                                    shape=(self.num_musicians,), dtype=np.int32),
             'musician_placements': spaces.Box(low=mus_low, high=mus_high,
-                                              shape=(self.num_musicians, 2), dtype=np.float32),
-            'attendee_placements': spaces.Box(low=0, high=att_high,
-                                              shape=(self.num_attendees, 2), dtype=np.float32),
-            'attendee_happiness': spaces.Box(low=-1e10, high=1e10, shape=(self.num_attendees,), dtype=np.int32),
+                                              shape=(self.num_musicians * 2,), dtype=np.float32),
+            # 'attendee_placements': spaces.Box(low=0, high=att_high,
+            #                                   shape=(self.num_attendees * 2,), dtype=np.float32),
+            'attendee_happiness': spaces.Box(low=-1, high=1, shape=(self.num_attendees,), dtype=np.float32),
+            # 'pillars': spaces.Box(low=0, high=pil_high, shape=(len(self.pillars) * 3,), dtype=np.float32),
             # 'attendee_tastes': spaces.Box(low=-1e6, high=1e6, shape=self.attendee_tastes.shape, dtype=np.float32)
         })
 
@@ -94,6 +91,7 @@ class MusicianPlacementEnv(gym.Env):
             self.stage_color = self.colors['gray']
             self.attendee_color = self.colors['blue']
             self.musician_color = self.colors['green']
+            self.pillar_color = self.colors['yellow']
             self.just_placed_color = self.colors['red']
 
     def reset(self, seed=None, options=None):
@@ -133,13 +131,14 @@ class MusicianPlacementEnv(gym.Env):
         self.prev_reward = self.reward_mult * happiness.sum()
         observation = {
             'musicians_placed': self.musicians_placed,
-            'musician_placements': self.musician_placements.copy(),
-            'musician_instruments': self.musicians.copy(),
-            'attendee_placements': self.attendee_placements.copy(),
+            'musician_placements': self.musician_placements.flatten().copy(),
+            # 'musician_instruments': self.musicians.copy(),
+            # 'attendee_placements': self.attendee_placements.flatten().copy(),
+            # 'pillars': self.pillars.flatten().copy(),
             # 'attendee_tastes': self.attendee_tastes.copy(),
-            'attendee_happiness': happiness
+            'attendee_happiness': happiness * 1e-9
         }
-        return observation, {}
+        return observation  # , {}
 
     def step(self, action):
         xmin, ymin = self.stage_bottom_left
@@ -186,18 +185,19 @@ class MusicianPlacementEnv(gym.Env):
         # Assemble the observation
         observation = {
             'musicians_placed': self.musicians_placed,
-            'musician_placements': self.musician_placements.copy(),
-            'musician_instruments': self.musicians.copy(),
-            'attendee_placements': self.attendee_placements.copy(),
+            'musician_placements': self.musician_placements.flatten().copy(),
+            # 'musician_instruments': self.musicians.copy(),
+            # 'attendee_placements': self.attendee_placements.flatten().copy(),
+            # 'pillars': self.pillars.flatten().copy(),
             # 'attendee_tastes': self.attendee_tastes.copy(),
-            'attendee_happiness': attendee_happiness
+            'attendee_happiness': attendee_happiness * 1e-9
         }
 
         if done:
             info = {'is_success': is_success}
         else:
             info = {}
-        return observation, reward, done, False, info
+        return observation, reward, done, info
 
     def render(self):
         if self.screen is not None:
@@ -219,18 +219,25 @@ class MusicianPlacementEnv(gym.Env):
 
             # Draw musicians
             for i, musician in enumerate(self.musician_placements):
-                musician_x = int(self.musician_placements[i, 0])
-                musician_y = int(self.musician_placements[i, 1])
+                musician_x = self.musician_placements[i, 0]
+                musician_y = self.musician_placements[i, 1]
                 pygame.draw.circle(self.screen, self.musician_color, (int(self.render_scale * musician_x),
                                                                       int(self.render_scale * musician_y)),
                                    self.radius)
             # Draw attendees
             for i, attendee in enumerate(self.attendee_placements):
-                attendee_x = int(attendee[0])
-                attendee_y = int(attendee[1])
+                attendee_x = attendee[0]
+                attendee_y = attendee[1]
                 pygame.draw.circle(self.screen, self.attendee_color, (int(self.render_scale * attendee_x),
                                                                       int(self.render_scale * attendee_y)),
                                    self.radius)
+            # Draw pillars
+            for i, pillar in enumerate(self.pillars):
+                pillar_x = pillar[0]
+                pillar_y = pillar[1]
+                pygame.draw.circle(self.screen, self.pillar_color, (int(self.render_scale * pillar_x),
+                                                                    int(self.render_scale * pillar_y)),
+                                   int(self.render_scale * pillar[2]))
 
             pygame.display.flip()
             self.clock.tick(60)

@@ -57,13 +57,18 @@ def calculate_happiness(
     total_happiness = np.zeros((len(attendees), len(musicians)), dtype=np.int32)
     distances_sqr = cdist(attendees, musicians, 'euclidean') ** 2
     for cur_attendee_idx in range(attendees.shape[0]):
+        segments = (musicians, np.repeat(attendees[cur_attendee_idx][np.newaxis, :],
+                                         musicians.shape[0]).reshape((2, musicians.shape[0])).T)
         musician_not_blocked = np.all((distances_to_segments(
             musicians,
-            (musicians, np.repeat(attendees[cur_attendee_idx][np.newaxis, :],
-                                  musicians.shape[0]).reshape((2, musicians.shape[0])).T)
+            segments
         ) + np.eye(musicians.shape[0]) * 100) > 5, axis=0)
         if pillars is not None:
-            pass
+            pillar_blocked = np.all(distances_to_segments(
+                pillars[:, :2],
+                segments
+            ) > pillars[:, 2], axis=0)
+            musician_not_blocked = musician_not_blocked & pillar_blocked
         cur_tastes = attendee_tastes[cur_attendee_idx]
         attendee_happiness = np.ceil(1000000 * cur_tastes[instruments] * musician_not_blocked / distances_sqr[cur_attendee_idx])
         total_happiness[cur_attendee_idx] = attendee_happiness

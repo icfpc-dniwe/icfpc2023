@@ -10,19 +10,19 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 if __name__ == '__main__':
     num_steps = 1_000_000
-    problem_id = 10
-    info = read_problem(Path(f'../problems/json/{problem_id}.json'))
-    solution = load_solution(Path(f'../solutions/recal_step_57/{problem_id}.json'))
-    initial_placements = np.array([[p.x, p.y] for p in solution.placements], dtype=np.float32)
+    problem_id = 56
+    info = read_problem(Path(f'../problems/full_round/{problem_id}.json'))
+    # solution = load_solution(Path(f'../solutions/recal_step_7_ext2_full_p/{problem_id}.json'))
+    # initial_placements = np.array([[p.x, p.y] for p in solution.placements], dtype=np.float32)
     env_fn = lambda render_mode: MusicianPlacementEnv(
         info, render_mode=render_mode, calculate_happiness_for_all=True,
-        initial_placements=initial_placements
+        # initial_placements=initial_placements
     )
     env = make_vec_env(env_fn, n_envs=8, vec_env_cls=SubprocVecEnv, env_kwargs={'render_mode': None})
 
     policy_kwargs = dict(
-        features_extractor_class=MusiciansCombinedExtractor,
-        features_extractor_kwargs=dict(features_dim=128),
+        # features_extractor_class=MusiciansCombinedExtractor,
+        # features_extractor_kwargs=dict(features_dim=128),
         log_std_init=-2,
         ortho_init=False
     )
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     )
     
     model = A2C("MultiInputPolicy", env, policy_kwargs=policy_kwargs, device="cpu", verbose=2, **params)
-    model.learn(total_timesteps=num_steps)
+    model.learn(total_timesteps=num_steps, progress_bar=True)
     model.save(f"a2c_{problem_id}_{num_steps}")
     # model.load(f"a2c_{problem_id}_{num_steps}", device='cpu')
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         # if rewards[0] > my_result:
         #     print('New best!', rewards)
         print(action, rewards, dones)
-        input()
+        # input()
         if np.all(dones):
             break
     input()
