@@ -138,7 +138,7 @@ class MusicianPlacementEnv(gym.Env):
             # 'attendee_tastes': self.attendee_tastes.copy(),
             'attendee_happiness': happiness * 1e-9
         }
-        return observation  # , {}
+        return observation, {}
 
     def step(self, action):
         xmin, ymin = self.stage_bottom_left
@@ -197,7 +197,7 @@ class MusicianPlacementEnv(gym.Env):
             info = {'is_success': is_success}
         else:
             info = {}
-        return observation, reward, done, info
+        return observation, reward, done, False, info
 
     def render(self):
         if self.screen is not None:
