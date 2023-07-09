@@ -115,6 +115,7 @@ class MusicianPlacementEnv(gym.Env):
                 self.musicians,
                 self.attendee_placements,
                 self.attendee_tastes,
+                self.pillars,
                 reduce='none'
             )
         else:
@@ -124,6 +125,7 @@ class MusicianPlacementEnv(gym.Env):
                     self.musicians[:self.musicians_placed],
                     self.attendee_placements,
                     self.attendee_tastes,
+                    self.pillars,
                     reduce='none'
                 )
             else:
@@ -165,6 +167,7 @@ class MusicianPlacementEnv(gym.Env):
                     self.musicians,
                     self.attendee_placements,
                     self.attendee_tastes,
+                    self.pillars,
                     reduce='none'
                 )
             else:
@@ -173,6 +176,7 @@ class MusicianPlacementEnv(gym.Env):
                     self.musicians[:self.musicians_placed],
                     self.attendee_placements,
                     self.attendee_tastes,
+                    self.pillars,
                     reduce='none'
                 )
             reward = attendee_happiness.sum() * self.reward_mult

@@ -67,7 +67,7 @@ def calculate_happiness(
             pillar_blocked = np.all(distances_to_segments(
                 pillars[:, :2],
                 segments
-            ) > pillars[:, 2], axis=0)
+            ) > pillars[:, 2:], axis=0)
             musician_not_blocked = musician_not_blocked & pillar_blocked
         cur_tastes = attendee_tastes[cur_attendee_idx]
         attendee_happiness = np.ceil(1000000 * cur_tastes[instruments] * musician_not_blocked / distances_sqr[cur_attendee_idx])
