@@ -63,7 +63,7 @@ def calculate_happiness(
             musicians,
             segments
         ) + np.eye(musicians.shape[0]) * 100) > 5, axis=0)
-        if pillars is not None:
+        if pillars is not None and len(pillars) > 0:
             pillar_blocked = np.all(distances_to_segments(
                 pillars[:, :2],
                 segments

@@ -57,8 +57,8 @@ class MusicianPlacementEnv(gym.Env):
             'musicians_placed': spaces.Discrete(len(self.musicians)),
             # 'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
             #                                    shape=(self.num_musicians,), dtype=np.int32),
-            'musician_placements': spaces.Box(low=mus_low, high=mus_high,
-                                              shape=(self.num_musicians * 2,), dtype=np.float32),
+            # 'musician_placements': spaces.Box(low=mus_low, high=mus_high,
+            #                                   shape=(self.num_musicians * 2,), dtype=np.float32),
             # 'attendee_placements': spaces.Box(low=0, high=att_high,
             #                                   shape=(self.num_attendees * 2,), dtype=np.float32),
             'attendee_happiness': spaces.Box(low=-1, high=1, shape=(self.num_attendees,), dtype=np.float32),
@@ -130,10 +130,13 @@ class MusicianPlacementEnv(gym.Env):
                 )
             else:
                 happiness = np.zeros((self.num_attendees,), dtype=np.int32)
-        self.prev_reward = self.reward_mult * happiness.sum()
+        if not self.calculate_happiness_for_all and self.musicians_placed < 1:
+            self.prev_reward = -1
+        else:
+            self.prev_reward = self.reward_mult * happiness.sum()
         observation = {
             'musicians_placed': self.musicians_placed,
-            'musician_placements': self.musician_placements.flatten().copy(),
+            # 'musician_placements': self.musician_placements.flatten().copy(),
             # 'musician_instruments': self.musicians.copy(),
             # 'attendee_placements': self.attendee_placements.flatten().copy(),
             # 'pillars': self.pillars.flatten().copy(),
@@ -189,7 +192,7 @@ class MusicianPlacementEnv(gym.Env):
         # Assemble the observation
         observation = {
             'musicians_placed': self.musicians_placed,
-            'musician_placements': self.musician_placements.flatten().copy(),
+            # 'musician_placements': self.musician_placements.flatten().copy(),
             # 'musician_instruments': self.musicians.copy(),
             # 'attendee_placements': self.attendee_placements.flatten().copy(),
             # 'pillars': self.pillars.flatten().copy(),

@@ -10,12 +10,12 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 if __name__ == '__main__':
     num_steps = 1_000_000
-    problem_id = 56
-    info = read_problem(Path(f'../problems/full_round/{problem_id}.json'))
+    problem_id = 10
+    info = read_problem(Path(f'../problems/json/{problem_id}.json'))
     # solution = load_solution(Path(f'../solutions/recal_step_7_ext2_full_p/{problem_id}.json'))
     # initial_placements = np.array([[p.x, p.y] for p in solution.placements], dtype=np.float32)
     env_fn = lambda render_mode: MusicianPlacementEnv(
-        info, render_mode=render_mode, calculate_happiness_for_all=True,
+        info, render_mode=render_mode, calculate_happiness_for_all=False,
         # initial_placements=initial_placements
     )
     env = make_vec_env(env_fn, n_envs=8, vec_env_cls=SubprocVecEnv, env_kwargs={'render_mode': None})
