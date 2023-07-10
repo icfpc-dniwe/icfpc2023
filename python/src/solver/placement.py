@@ -40,8 +40,8 @@ def generate_compliant_positions(bounds, num_to_generate: int, min_distance: flo
     positions = []
     for cur_num in range(num_to_generate):
         for _ in range(max_iter):
-            new_pos_x = np.random.uniform(xmin + min_distance, xmax - min_distance)
-            new_pos_y = np.random.uniform(xmin + min_distance, xmax - min_distance)
+            new_pos_x = np.random.uniform(xmin + min_distance, xmax - min_distance + 1e-7)
+            new_pos_y = np.random.uniform(xmin + min_distance, xmax - min_distance + 1e-7)
             if check_positions_valid(np.array(positions + [(new_pos_x, new_pos_y)]),
                                      xmin, xmax, ymin, ymax, min_distance):
                 positions.append((new_pos_x, new_pos_y))

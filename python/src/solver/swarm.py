@@ -24,7 +24,7 @@ def swarm_step(positions, bounds, old_metric, gradient_step: float = 1, max_step
                  for pos in possible_positions]
     print()
     step_vecs = np.array([pos[np.newaxis, :] * g[:, np.newaxis] * gradient_step
-                          for pos, g in zip(new_positions_vecs, gradients)]).sum(axis=0)
+                          for pos, g in zip(new_positions_vecs, gradients)]).mean(axis=0)
     step_vecs = np.minimum(max_step, np.maximum(-max_step, step_vecs))
     new_positions = positions + step_vecs
     new_positions[:, 0] = np.maximum(bounds[0], new_positions[:, 0])

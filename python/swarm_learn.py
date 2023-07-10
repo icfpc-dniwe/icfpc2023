@@ -7,7 +7,7 @@ from src.solver.swarm import swarm_step
 
 
 if __name__ == '__main__':
-    info = read_problem(Path('../problems/json/1.json'))
+    info = read_problem(Path('../problems/json/21.json'))
     instruments = np.array(info.musicians, dtype=np.int32)
     bounds = (info.stage.bottom_x,
               info.stage.bottom_y,
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     metric = initial_metric
     positions = initial_positions
     swarm_iters = 10_000
-    gradient_step = 1
+    gradient_step = 1e-1
     min_delta = -10000
     for cur_iter in range(swarm_iters):
         cur_gradient_step = gradient_step * np.cos(np.pi * cur_iter / swarm_iters)
@@ -34,7 +34,7 @@ if __name__ == '__main__':
             break
         positions, new_metric = res
         metric_delta = (new_metric.sum() - metric.sum())
-        print('Iter', cur_iter, 'metric delta', metric_delta, 'new metric', new_metric.sum())
+        print('Iter', cur_iter, 'metric delta', metric_delta, (new_metric - metric).max(), 'new metric', new_metric.sum())
         if metric_delta < min_delta:
             print('Aborting')
             break
