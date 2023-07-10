@@ -37,3 +37,17 @@ def swarm_step(positions, bounds, old_metric, gradient_step: float = 1, max_step
         return None
     new_metric = calculate_happiness(new_positions_r, **metric_params, reduce='attendee')
     return new_positions_r, new_metric
+
+
+def mutate_positions(positions, bounds, max_step: float):
+    step_vecs = np.random.uniform(-max_step, max_step, size=positions.shape)
+    new_positions = positions + step_vecs
+    new_positions[:, 0] = np.maximum(bounds[0], new_positions[:, 0])
+    new_positions[:, 1] = np.maximum(bounds[1], new_positions[:, 1])
+    new_positions[:, 0] = np.minimum(bounds[2], new_positions[:, 0])
+    new_positions[:, 1] = np.minimum(bounds[3], new_positions[:, 1])
+    new_positions_r, num_iter = jiggle_positions(new_positions, bounds)
+    if new_positions_r is None:
+        print('new jiggling error', num_iter)
+        return None
+    return new_positions_r
