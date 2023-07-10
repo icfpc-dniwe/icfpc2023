@@ -26,5 +26,8 @@ def filter_placements(
                        placements))
 
 
-def placements_to_solution(placements: t.Iterable[t.Tuple[float, float]]) -> ProblemSolution:
-    return ProblemSolution(placements=[Placement(x=pl[0], y=pl[1]) for pl in placements])
+def placements_to_solution(
+        placements: t.Iterable[t.Tuple[float, float]],
+        volumes: t.Iterable[float]
+) -> ProblemSolution:
+    return ProblemSolution(placements=[Placement(x=pl[0], y=pl[1]) for pl in placements], volumes=list(volumes))

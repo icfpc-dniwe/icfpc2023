@@ -40,6 +40,7 @@ def solve(
     placed = [placements[pos]]
     del placements[pos]
     instruments = [instr]
+    volumes = [10.]
     num_musicians_per_instrument[instr] -= 1
     musicians_placed = 1
     # cached_matrix = initial_matrix.copy()
@@ -59,11 +60,15 @@ def solve(
         instr = im % num_tastes
         pos = im // num_tastes
         print(next_matrix[pos, instr])
-        if next_matrix[pos, instr] < 1e-9:
-            if next_matrix[pos, instr] < 0:
-                recalc_every = 1
-            else:
-                recalc_every = 1e10
+        # if next_matrix[pos, instr] < 1e-9:
+        #     if next_matrix[pos, instr] < 0:
+        #         recalc_every = 1
+        #     else:
+        #         recalc_every = 1e10
+        if next_matrix[pos, instr] < 0:
+            volumes.append(0)
+        else:
+            volumes.append(10)
         placed.append(placements[pos])
         instruments.append(instr)
         del placements[pos]
@@ -73,19 +78,22 @@ def solve(
         assert num_musicians_per_instrument[instr] >= 0
 
     sorted_placements = []
+    sorted_volumes = []
     for cur_instrument in info.musicians:
         for cur_instr_idx in range(len(instruments)):
             if instruments[cur_instr_idx] == cur_instrument:
                 sorted_placements.append(placed[cur_instr_idx])
+                sorted_volumes.append(volumes[cur_instr_idx])
                 del instruments[cur_instr_idx]
                 del placed[cur_instr_idx]
+                del volumes[cur_instr_idx]
                 break
     assert len(sorted_placements) == len(info.musicians)
-    save_solution(placements_to_solution(sorted_placements), save_path)
+    save_solution(placements_to_solution(sorted_placements, sorted_volumes), save_path)
 
 
 def random_solver(problem_id: int, solutions_prefix: str = 'random'):
-    problem_path = Path('../problems/json/') / f'{problem_id}.json'
+    problem_path = Path('../problems/full_round/') / f'{problem_id}.json'
     save_path = Path('../solutions') / solutions_prefix / f'{problem_id}.json'
     save_path.parent.mkdir(exist_ok=True, parents=True)
     info = read_problem(problem_path)
@@ -124,13 +132,13 @@ def try_milp_solver(problem_id: int, solutions_prefix: str = 'nonte', use_ext2: 
 if __name__ == '__main__':
     # for problem_id in range(1, 11):
     #     solve(problem_id, 25)
-    with Pool(6) as p:
-        for _ in map(
+    with Pool(10) as p:
+        for _ in p.imap(
                 partial(solve,
-                        num_recalc_step=1,
+                        num_recalc_step=11,
                         first_recalcs=0,
                         use_ext2=False,
-                        solutions_prefix='recal_step_1_all'),
-                range(18, 19)
+                        solutions_prefix='recal_step_11_vol_f'),
+                range(1, 56)
         ):
             pass

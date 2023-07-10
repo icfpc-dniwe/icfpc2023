@@ -23,3 +23,4 @@ class ProblemInfo:
 @dataclass
 class ProblemSolution:
     placements: t.Sequence[Placement]
+    volumes: t.Sequence[float]
