@@ -54,7 +54,7 @@ class MusicianPlacementEnv(gym.Env):
         # att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
         # pil_high = np.tile(np.array([[self.room_width, self.room_height, 100]]), (len(self.pillars), 1))
         self.step_size = min(self.stage_height, self.stage_width)
-        self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1, high=1, shape=(self.num_musicians, 2), dtype=np.float32)
         # self.observation_space = spaces.Dict({
         #     'musicians_placed': spaces.Discrete(len(self.musicians)),
         #     # 'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
@@ -146,7 +146,7 @@ class MusicianPlacementEnv(gym.Env):
         #     # 'attendee_tastes': self.attendee_tastes.copy(),
         #     'attendee_happiness': happiness * 1e-9
         # }
-        observation = happiness * 1e-8
+        observation = happiness * self.reward_mult
         return observation, {}
 
     def step(self, action):
@@ -177,11 +177,11 @@ class MusicianPlacementEnv(gym.Env):
             self.attendee_tastes,
             self.pillars,
             reduce='attendee'
-        ).astype(np.float64) * 1e-8
+        ).astype(np.float64) * self.reward_mult
         reward = happiness.sum()
         tmp = reward
         reward = max(0, (reward - self.prev_reward) + 1) ** 4
-        self.prev_reward = tmp
+        self.prev_reward = happiness.sum()
         if is_done:
             return happiness, reward + 1, True, False, {'is_success': True}
         else:
