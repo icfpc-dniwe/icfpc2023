@@ -1,4 +1,6 @@
 import numpy as np
+from src.solver.metric import check_positions_valid
+from src.solver.geometry import calculate_bounce_force
 from src.mytypes import ProblemSolution, Placement
 import typing as t
 
@@ -31,3 +33,34 @@ def placements_to_solution(
         volumes: t.Iterable[float]
 ) -> ProblemSolution:
     return ProblemSolution(placements=[Placement(x=pl[0], y=pl[1]) for pl in placements], volumes=list(volumes))
+
+
+def generate_compliant_positions(bounds, num_to_generate: int, min_distance: float = 10, max_iter: int = 100):
+    xmin, ymin, xmax, ymax = bounds
+    positions = []
+    for cur_num in range(num_to_generate):
+        for _ in range(max_iter):
+            new_pos_x = np.random.uniform(xmin + min_distance, xmax - min_distance)
+            new_pos_y = np.random.uniform(xmin + min_distance, xmax - min_distance)
+            if check_positions_valid(np.array(positions + [(new_pos_x, new_pos_y)]),
+                                     xmin, xmax, ymin, ymax, min_distance):
+                positions.append((new_pos_x, new_pos_y))
+                break
+        if len(positions) <= cur_num:
+            return None
+    return positions
+
+
+def jiggle_positions(positions: np.ndarray, bounds, step_size: float = 0.5, max_iter: int = 100, min_distance: float = 10):
+    xmin, ymin, xmax, ymax = bounds
+    iter_idx = 0
+    step_size_r = step_size * min_distance
+    while not check_positions_valid(positions, xmin, xmax, ymin, ymax, min_distance):
+        iter_idx += 1
+        if iter_idx >= max_iter:
+            return None, iter_idx
+        forces = calculate_bounce_force(positions, bounds, min_distance=min_distance)
+        forces = forces / np.linalg.norm(forces + 1e-7, axis=1, keepdims=True)
+        positions += forces * step_size_r * np.cos(np.pi * (iter_idx - 1) / max_iter)
+        # delta = np.max(np.abs(forces))
+    return positions, iter_idx
