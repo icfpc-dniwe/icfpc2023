@@ -23,17 +23,16 @@ def calculate_taste_cost_matrix(problem_info: ProblemInfo, placements: t.Optiona
     return taste_cost
 
 
-def calculate_taste_cost_matrix_with_blockers(
-        problem_info: ProblemInfo,
-        placements: np.ndarray,
-        already_placed: np.ndarray,
-        use_ext2: bool = False
+def calculate_cost_matrix_internal(
+    placements: np.ndarray,
+    instruments: np.ndarray,
+    attendee_placements: np.ndarray,
+    attendee_tastes: np.ndarray,
+    already_placed: np.ndarray,
+    pillar_centers: np.ndarray,
+    pillar_radius: np.ndarray,
+    use_ext2: bool = False
 ) -> np.ndarray:
-    attendee_placements = np.array([(a.x, a.y) for a in problem_info.attendees])
-    attendee_tastes = np.array([[taste for taste in a.tastes] for a in problem_info.attendees])
-    pillar_centers = np.array([(p.x, p.y) for p in problem_info.pillars])
-    pillar_radius = np.array([p.radius for p in problem_info.pillars])
-    instruments = np.array(problem_info.musicians[:len(already_placed)], dtype=np.int32).reshape((1, -1))
     num_tastes = attendee_tastes.shape[1]
     distance_matrix = cdist(placements, attendee_placements, 'euclidean') ** 2
     musician_not_blocked = np.zeros(distance_matrix.shape, dtype=np.bool_)
@@ -63,6 +62,29 @@ def calculate_taste_cost_matrix_with_blockers(
         taste_cost[:, cur_taste] = q * (np.ceil(1000000 * attendee_tastes[:, cur_taste] / distance_matrix)
                                         * musician_not_blocked).sum(axis=1)
     return taste_cost
+
+
+def calculate_taste_cost_matrix_with_blockers(
+        problem_info: ProblemInfo,
+        placements: np.ndarray,
+        already_placed: np.ndarray,
+        use_ext2: bool = False
+) -> np.ndarray:
+    attendee_placements = np.array([(a.x, a.y) for a in problem_info.attendees])
+    attendee_tastes = np.array([[taste for taste in a.tastes] for a in problem_info.attendees])
+    pillar_centers = np.array([(p.x, p.y) for p in problem_info.pillars])
+    pillar_radius = np.array([p.radius for p in problem_info.pillars])
+    instruments = np.array(problem_info.musicians[:len(already_placed)], dtype=np.int32).reshape((1, -1))
+    return calculate_cost_matrix_internal(
+        placements,
+        instruments,
+        attendee_placements,
+        attendee_tastes,
+        already_placed,
+        pillar_centers,
+        pillar_radius,
+        use_ext2
+    )
 
 
 def create_constraints(musicians: t.Sequence[int], num_placements: int) -> t.List[LinearConstraint]:

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial.distance import cdist, pdist, squareform
 from numba import njit
 import typing as t
 
@@ -59,3 +60,36 @@ def distances_to_segments(points: np.ndarray, segments: t.Tuple[np.ndarray, np.n
                 segments[1][cur_segment_idx, 0], segments[1][cur_segment_idx, 1]
             )
     return distances
+
+
+def calculate_bounce_force(
+        positions: np.ndarray,
+        bounds: t.Sequence[float],
+        boundary_forces_coeff: float = 1,
+        min_distance: float = 10,
+        eps: float = 1e-7
+) -> np.ndarray:
+    distances = squareform(pdist(positions, 'euclidean')) + np.eye(len(positions)) * min_distance
+    # inter_forces = ((distances < min_distance) / (distances + eps))
+    inter_forces = np.maximum(0, min_distance - distances)
+    inter_vecs = (positions[:, np.newaxis] - positions[np.newaxis, :]) // 2
+    # inter_vecs[np.linalg.norm(inter_vecs, axis=-1) > min_distance] = 0
+    inter_forces = (inter_vecs * inter_forces[..., np.newaxis]).sum(axis=1)
+    xmin, ymin, xmax, ymax = bounds
+    boundary_distances = np.stack((
+        positions[:, 0] - xmin,
+        positions[:, 1] - ymin,
+        xmax - positions[:, 0],
+        ymax - positions[:, 1]
+    ), axis=1)
+    # boundary_forces = (boundary_distances < min_distance) / (boundary_distances ** 2 + eps)
+    boundary_forces = np.maximum(0, min_distance - boundary_distances)
+    boundary_vecs = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=np.float32)
+    boundary_forces = np.stack((
+        boundary_vecs[np.newaxis, 0] * boundary_forces[:, 0:1],
+        boundary_vecs[np.newaxis, 1] * boundary_forces[:, 1:2],
+        boundary_vecs[np.newaxis, 2] * boundary_forces[:, 2:3],
+        boundary_vecs[np.newaxis, 3] * boundary_forces[:, 3:4],
+    )).sum(axis=0)
+    forces = inter_forces + boundary_forces_coeff * boundary_forces
+    return forces

@@ -79,10 +79,13 @@ def calculate_happiness(
         q = 1 + ((1 / musician_distances) * musicians_same_instrument
                  - np.eye(len(musicians))).sum(axis=0, keepdims=True)
         total_happiness = np.ceil(total_happiness * q)
-    total_happiness = total_happiness.sum(axis=1)
     if reduce == 'sum':
         return total_happiness.sum()
     elif reduce == 'none':
-        return total_happiness
+        return total_happiness.sum(axis=1)
+    elif reduce == 'attendee':
+        return total_happiness.sum(axis=0)
+    elif reduce == 'musician':
+        return total_happiness.sum(axis=1)
     return total_happiness.sum()
 

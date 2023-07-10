@@ -103,10 +103,10 @@ class MusicianPlacementEnv(gym.Env):
             self.musician_placements = self.generate_valid_placements(self.num_musicians)
         else:
             self.musician_placements = self.initial_placements.copy()
-        if options is None:
-            initial_musicians = 0
-        elif options['place_musicians']:
-            initial_musicians = np.random.randint(0, self.num_musicians - 1)
+        # if options is None:
+        #     initial_musicians = 0
+        # elif options['place_musicians']:
+        initial_musicians = np.random.randint(0, self.num_musicians - 1)
         if initial_musicians > 0:
             self.musicians_placed = initial_musicians
         if self.calculate_happiness_for_all:

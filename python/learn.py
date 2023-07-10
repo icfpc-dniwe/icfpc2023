@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # solution = load_solution(Path(f'../solutions/recal_step_7_ext2_full_p/{problem_id}.json'))
     # initial_placements = np.array([[p.x, p.y] for p in solution.placements], dtype=np.float32)
     env_fn = lambda render_mode: MusicianPlacementEnv(
-        info, render_mode=render_mode, calculate_happiness_for_all=False,
+        info, render_mode=render_mode, calculate_happiness_for_all=True,
         # initial_placements=initial_placements
     )
     env = make_vec_env(env_fn, n_envs=8, vec_env_cls=SubprocVecEnv, env_kwargs={'render_mode': None})
