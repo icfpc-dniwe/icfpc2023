@@ -10,7 +10,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 
 if __name__ == '__main__':
     num_steps = 10_000_000
-    problem_id = 53
+    problem_id = 21
     info = read_problem(Path(f'../problems/json/{problem_id}.json'))
     # solution = load_solution(Path(f'../solutions/recal_step_7_ext2_full_p/{problem_id}.json'))
     # initial_placements = np.array([[p.x, p.y] for p in solution.placements], dtype=np.float32)
@@ -21,8 +21,8 @@ if __name__ == '__main__':
     env = make_vec_env(env_fn, n_envs=8, vec_env_cls=SubprocVecEnv, env_kwargs={'render_mode': None})
 
     policy_kwargs = dict(
-        features_extractor_class=MusiciansCombinedExtractor,
-        features_extractor_kwargs=dict(features_dim=128),
+        # features_extractor_class=MusiciansCombinedExtractor,
+        # features_extractor_kwargs=dict(features_dim=128),
         log_std_init=-2,
         ortho_init=False
     )
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         use_sde=True
     )
     
-    model = A2C("MultiInputPolicy", env, policy_kwargs=policy_kwargs, device="cpu", verbose=2, **params)
+    model = A2C("MlpPolicy", env, policy_kwargs=policy_kwargs, device="cpu", verbose=2, **params)
     model.learn(total_timesteps=num_steps, progress_bar=True)
     model.save(f"a2c_{problem_id}_{num_steps}")
     # model.load(f"a2c_{problem_id}_{num_steps}", device='cpu')

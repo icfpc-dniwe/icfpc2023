@@ -3,6 +3,7 @@ from gymnasium import spaces
 import pygame
 import numpy as np
 from src.solver.metric import calculate_happiness, check_positions_valid
+from src.solver.placement import jiggle_positions
 from src.mytypes import ProblemInfo
 
 class MusicianPlacementEnv(gym.Env):
@@ -48,23 +49,25 @@ class MusicianPlacementEnv(gym.Env):
         else:
             self.musician_placements = self.initial_placements.copy()
         self.prev_reward = None
-        mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
-        mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
-        att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
-        pil_high = np.tile(np.array([[self.room_width, self.room_height, 100]]), (len(self.pillars), 1))
-        self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
-        self.observation_space = spaces.Dict({
-            'musicians_placed': spaces.Discrete(len(self.musicians)),
-            # 'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
-            #                                    shape=(self.num_musicians,), dtype=np.int32),
-            'musician_placements': spaces.Box(low=mus_low, high=mus_high,
-                                              shape=(self.num_musicians, 2), dtype=np.float32),
-            'attendee_placements': spaces.Box(low=0, high=att_high,
-                                              shape=(self.num_attendees, 2), dtype=np.float32),
-            'attendee_happiness': spaces.Box(low=-1, high=1, shape=(self.num_attendees,), dtype=np.float32),
-            # 'pillars': spaces.Box(low=0, high=pil_high, shape=(len(self.pillars) * 3,), dtype=np.float32),
-            # 'attendee_tastes': spaces.Box(low=-1e6, high=1e6, shape=self.attendee_tastes.shape, dtype=np.float32)
-        })
+        # mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
+        # mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
+        # att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
+        # pil_high = np.tile(np.array([[self.room_width, self.room_height, 100]]), (len(self.pillars), 1))
+        self.step_size = min(self.stage_height, self.stage_width)
+        self.action_space = spaces.Box(low=-1, high=1, shape=(2,), dtype=np.float32)
+        # self.observation_space = spaces.Dict({
+        #     'musicians_placed': spaces.Discrete(len(self.musicians)),
+        #     # 'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
+        #     #                                    shape=(self.num_musicians,), dtype=np.int32),
+        #     'musician_placements': spaces.Box(low=mus_low, high=mus_high,
+        #                                       shape=(self.num_musicians, 2), dtype=np.float32),
+        #     'attendee_placements': spaces.Box(low=0, high=att_high,
+        #                                       shape=(self.num_attendees, 2), dtype=np.float32),
+        #     'attendee_happiness': spaces.Box(low=-1, high=1, shape=(self.num_attendees,), dtype=np.float32),
+        #     # 'pillars': spaces.Box(low=0, high=pil_high, shape=(len(self.pillars) * 3,), dtype=np.float32),
+        #     # 'attendee_tastes': spaces.Box(low=-1e6, high=1e6, shape=self.attendee_tastes.shape, dtype=np.float32)
+        # })
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(self.num_musicians,), dtype=np.float32)
 
         self.screen = None
         if self.render_mode == 'human':
@@ -103,10 +106,10 @@ class MusicianPlacementEnv(gym.Env):
             self.musician_placements = self.generate_valid_placements(self.num_musicians)
         else:
             self.musician_placements = self.initial_placements.copy()
-        # if options is None:
-        #     initial_musicians = 0
-        # elif options['place_musicians']:
-        initial_musicians = np.random.randint(0, self.num_musicians - 1)
+        if options is None:
+            initial_musicians = 0
+        elif options['place_musicians']:
+            initial_musicians = np.random.randint(0, self.num_musicians - 1)
         if initial_musicians > 0:
             self.musicians_placed = initial_musicians
         if self.calculate_happiness_for_all:
@@ -116,7 +119,7 @@ class MusicianPlacementEnv(gym.Env):
                 self.attendee_placements,
                 self.attendee_tastes,
                 self.pillars,
-                reduce='none'
+                reduce='attendee'
             )
         else:
             if self.musicians_placed > 0:
@@ -126,85 +129,110 @@ class MusicianPlacementEnv(gym.Env):
                     self.attendee_placements,
                     self.attendee_tastes,
                     self.pillars,
-                    reduce='none'
+                    reduce='attendee'
                 )
             else:
-                happiness = np.zeros((self.num_attendees,), dtype=np.int32)
+                happiness = np.zeros((self.num_musicians,), dtype=np.int32)
         if not self.calculate_happiness_for_all and self.musicians_placed < 1:
             self.prev_reward = -1
         else:
             self.prev_reward = self.reward_mult * happiness.sum()
-        observation = {
-            'musicians_placed': self.musicians_placed,
-            'musician_placements': self.musician_placements.copy(),
-            # 'musician_instruments': self.musicians.copy(),
-            'attendee_placements': self.attendee_placements.copy(),
-            # 'pillars': self.pillars.flatten().copy(),
-            # 'attendee_tastes': self.attendee_tastes.copy(),
-            'attendee_happiness': happiness * 1e-9
-        }
+        # observation = {
+        #     'musicians_placed': self.musicians_placed,
+        #     'musician_placements': self.musician_placements.copy(),
+        #     # 'musician_instruments': self.musicians.copy(),
+        #     'attendee_placements': self.attendee_placements.copy(),
+        #     # 'pillars': self.pillars.flatten().copy(),
+        #     # 'attendee_tastes': self.attendee_tastes.copy(),
+        #     'attendee_happiness': happiness * 1e-9
+        # }
+        observation = happiness * 1e-8
         return observation, {}
 
     def step(self, action):
         xmin, ymin = self.stage_bottom_left
         xmax, ymax = xmin + self.stage_width, ymin + self.stage_height
-        next_placement = action
-        next_placement[0] = next_placement[0] * (self.stage_width - 20) + xmin + 10
-        next_placement[1] = next_placement[1] * (self.stage_height - 20) + ymin + 10
+        # next_placement = action
+        # next_placement[0] = next_placement[0] * (self.stage_width - 20) + xmin + 10
+        # next_placement[1] = next_placement[1] * (self.stage_height - 20) + ymin + 10
         # print(self.musician_placements.shape)
         # print(next_placement)
-        self.musician_placements[self.musicians_placed] = np.array(next_placement)
-        self.musicians_placed += 1
-        if self.musicians_placed >= len(self.musicians):
-            self.musicians_placed = 0
+        # self.musician_placements[self.musicians_placed] = np.array(next_placement)
+        # self.musicians_placed += 1
+        # if self.musicians_placed >= len(self.musicians):
+        #     self.musicians_placed = 0
         # print(self.musician_placements.shape)
-        if not check_positions_valid(self.musician_placements[:self.musicians_placed], xmin, xmax, ymin, ymax):
-            reward = 0
-            done = True
-            is_success = False
-            attendee_happiness = np.zeros((len(self.attendees),), dtype=np.float32)
+        new_placements = self.musician_placements + action * self.step_size
+        new_placements[:, 0] = np.maximum(xmin + 10, np.minimum(xmax - 10, new_placements[:, 0]))
+        new_placements[:, 1] = np.maximum(ymin + 10, np.minimum(ymax - 10, new_placements[:, 1]))
+        new_placements, num_iter = jiggle_positions(new_placements, (xmin, ymin, xmax, ymax))
+        if new_placements is None:
+            observation = np.zeros((self.num_musicians,), dtype=np.float32)
+            return observation, 0, True, False, {'is_success': False}
+        is_done = np.max(new_placements - self.musician_placements) < 1e-3
+        happiness = calculate_happiness(
+            self.musician_placements,
+            self.musicians,
+            self.attendee_placements,
+            self.attendee_tastes,
+            self.pillars,
+            reduce='attendee'
+        ).astype(np.float64) * 1e-8
+        reward = happiness.sum()
+        tmp = reward
+        reward = max(0, (reward - self.prev_reward) + 1) ** 4
+        self.prev_reward = tmp
+        if is_done:
+            return happiness, reward + 1, True, False, {'is_success': True}
         else:
-            if self.calculate_happiness_for_all:
-                attendee_happiness = calculate_happiness(
-                    self.musician_placements,
-                    self.musicians,
-                    self.attendee_placements,
-                    self.attendee_tastes,
-                    self.pillars,
-                    reduce='none'
-                )
-            else:
-                attendee_happiness = calculate_happiness(
-                    self.musician_placements[:self.musicians_placed],
-                    self.musicians[:self.musicians_placed],
-                    self.attendee_placements,
-                    self.attendee_tastes,
-                    self.pillars,
-                    reduce='none'
-                )
-            reward = attendee_happiness.sum() * self.reward_mult
-            tmp = reward
-            reward = max(0, (reward - self.prev_reward) + 1) ** 4
-            self.prev_reward = tmp
-            done = False  # self.musicians_placed >= len(self.musicians)
-            is_success = done
-
-        # Assemble the observation
-        observation = {
-            'musicians_placed': self.musicians_placed,
-            'musician_placements': self.musician_placements.copy(),
-            # 'musician_instruments': self.musicians.copy(),
-            'attendee_placements': self.attendee_placements.copy(),
-            # 'pillars': self.pillars.flatten().copy(),
-            # 'attendee_tastes': self.attendee_tastes.copy(),
-            'attendee_happiness': attendee_happiness * 1e-9
-        }
-
-        if done:
-            info = {'is_success': is_success}
-        else:
-            info = {}
-        return observation, reward, done, False, info
+            return happiness, reward, False, False, {}
+        # if not check_positions_valid(self.musician_placements, xmin, xmax, ymin, ymax):
+        #     reward = 0
+        #     done = True
+        #     is_success = False
+        #     attendee_happiness = np.zeros((len(self.attendees),), dtype=np.float32)
+        # else:
+        #     if self.calculate_happiness_for_all:
+        #         attendee_happiness = calculate_happiness(
+        #             self.musician_placements,
+        #             self.musicians,
+        #             self.attendee_placements,
+        #             self.attendee_tastes,
+        #             self.pillars,
+        #             reduce='attendee'
+        #         )
+        #     else:
+        #         attendee_happiness = calculate_happiness(
+        #             self.musician_placements[:self.musicians_placed],
+        #             self.musicians[:self.musicians_placed],
+        #             self.attendee_placements,
+        #             self.attendee_tastes,
+        #             self.pillars,
+        #             reduce='attendee'
+        #         )
+        #     reward = attendee_happiness.sum() * self.reward_mult
+        #     tmp = reward
+        #     reward = max(0, (reward - self.prev_reward) + 1) ** 4
+        #     self.prev_reward = tmp
+        #     done = False  # self.musicians_placed >= len(self.musicians)
+        #     is_success = done
+        #
+        # # Assemble the observation
+        # # observation = {
+        # #     'musicians_placed': self.musicians_placed,
+        # #     'musician_placements': self.musician_placements.copy(),
+        # #     # 'musician_instruments': self.musicians.copy(),
+        # #     'attendee_placements': self.attendee_placements.copy(),
+        # #     # 'pillars': self.pillars.flatten().copy(),
+        # #     # 'attendee_tastes': self.attendee_tastes.copy(),
+        # #     'attendee_happiness': attendee_happiness * 1e-9
+        # # }
+        #
+        # if done:
+        #     info = {'is_success': is_success}
+        # else:
+        #     info = {}
+        # return observation, reward, done, False, info
 
     def render(self):
         if self.screen is not None:

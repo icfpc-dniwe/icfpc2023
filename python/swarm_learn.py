@@ -23,7 +23,7 @@ if __name__ == '__main__':
     metric = initial_metric
     positions = initial_positions
     swarm_iters = 10_000
-    gradient_step = 1e-1
+    gradient_step = 1
     min_delta = -10000
     for cur_iter in range(swarm_iters):
         cur_gradient_step = gradient_step * np.cos(np.pi * cur_iter / swarm_iters)
@@ -32,10 +32,12 @@ if __name__ == '__main__':
         if res is None:
             print('error on step', cur_iter)
             break
-        positions, new_metric = res
+        new_positions, new_metric = res
         metric_delta = (new_metric.sum() - metric.sum())
-        print('Iter', cur_iter, 'metric delta', metric_delta, (new_metric - metric).max(), 'new metric', new_metric.sum())
+        print('Iter', cur_iter, 'pos delta', np.abs(new_positions - positions).max(),
+              'metric delta', metric_delta, (new_metric - metric).max(), 'new metric', new_metric.sum())
         if metric_delta < min_delta:
             print('Aborting')
             break
         metric = new_metric
+        positions = new_positions
