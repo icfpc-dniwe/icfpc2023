@@ -48,19 +48,19 @@ class MusicianPlacementEnv(gym.Env):
         else:
             self.musician_placements = self.initial_placements.copy()
         self.prev_reward = None
-        mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1)).flatten()
-        mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1)).flatten()
-        att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1)).flatten()
-        pil_high = np.tile(np.array([[self.room_width, self.room_height, 100]]), (len(self.pillars), 1)).flatten()
+        mus_low = np.tile(np.array([[xmin, ymin]]), (self.num_musicians, 1))
+        mus_high = np.tile(np.array([[xmax, ymax]]), (self.num_musicians, 1))
+        att_high = np.tile(np.array([[self.room_width, self.room_height]]), (self.num_attendees, 1))
+        pil_high = np.tile(np.array([[self.room_width, self.room_height, 100]]), (len(self.pillars), 1))
         self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float32)
         self.observation_space = spaces.Dict({
             'musicians_placed': spaces.Discrete(len(self.musicians)),
             # 'musician_instruments': spaces.Box(low=0, high=np.max(self.musicians),
             #                                    shape=(self.num_musicians,), dtype=np.int32),
-            # 'musician_placements': spaces.Box(low=mus_low, high=mus_high,
-            #                                   shape=(self.num_musicians * 2,), dtype=np.float32),
-            # 'attendee_placements': spaces.Box(low=0, high=att_high,
-            #                                   shape=(self.num_attendees * 2,), dtype=np.float32),
+            'musician_placements': spaces.Box(low=mus_low, high=mus_high,
+                                              shape=(self.num_musicians, 2), dtype=np.float32),
+            'attendee_placements': spaces.Box(low=0, high=att_high,
+                                              shape=(self.num_attendees, 2), dtype=np.float32),
             'attendee_happiness': spaces.Box(low=-1, high=1, shape=(self.num_attendees,), dtype=np.float32),
             # 'pillars': spaces.Box(low=0, high=pil_high, shape=(len(self.pillars) * 3,), dtype=np.float32),
             # 'attendee_tastes': spaces.Box(low=-1e6, high=1e6, shape=self.attendee_tastes.shape, dtype=np.float32)
@@ -136,9 +136,9 @@ class MusicianPlacementEnv(gym.Env):
             self.prev_reward = self.reward_mult * happiness.sum()
         observation = {
             'musicians_placed': self.musicians_placed,
-            # 'musician_placements': self.musician_placements.flatten().copy(),
+            'musician_placements': self.musician_placements.copy(),
             # 'musician_instruments': self.musicians.copy(),
-            # 'attendee_placements': self.attendee_placements.flatten().copy(),
+            'attendee_placements': self.attendee_placements.copy(),
             # 'pillars': self.pillars.flatten().copy(),
             # 'attendee_tastes': self.attendee_tastes.copy(),
             'attendee_happiness': happiness * 1e-9
@@ -192,9 +192,9 @@ class MusicianPlacementEnv(gym.Env):
         # Assemble the observation
         observation = {
             'musicians_placed': self.musicians_placed,
-            # 'musician_placements': self.musician_placements.flatten().copy(),
+            'musician_placements': self.musician_placements.copy(),
             # 'musician_instruments': self.musicians.copy(),
-            # 'attendee_placements': self.attendee_placements.flatten().copy(),
+            'attendee_placements': self.attendee_placements.copy(),
             # 'pillars': self.pillars.flatten().copy(),
             # 'attendee_tastes': self.attendee_tastes.copy(),
             'attendee_happiness': attendee_happiness * 1e-9
