@@ -83,7 +83,7 @@ def calculate_happiness(
     if reduce == 'sum':
         return total_happiness.sum()
     elif reduce == 'none':
-        return total_happiness.sum(axis=1)
+        return total_happiness
     elif reduce == 'attendee':
         return total_happiness.sum(axis=0)
     elif reduce == 'musician':

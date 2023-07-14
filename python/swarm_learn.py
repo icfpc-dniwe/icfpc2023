@@ -1,9 +1,9 @@
 from pathlib import Path
 import numpy as np
 from src.io.data import read_problem
-from src.solver.placement import generate_compliant_positions, mutate_positions
+from src.solver.placement import generate_compliant_positions, mutate_positions, jiggle_positions
 from src.solver.metric import calculate_happiness
-from src.solver.swarm import swarm_step
+from src.solver.swarm import swarm_step, attendee_gradient
 
 
 def swarm_learn():
@@ -44,7 +44,7 @@ def swarm_learn():
 
 
 def anneal_learn():
-    info = read_problem(Path('../problems/json/21.json'))
+    info = read_problem(Path('../problems/json/1.json'))
     instruments = np.array(info.musicians, dtype=np.int32)
     bounds = (info.stage.bottom_x,
               info.stage.bottom_y,
@@ -59,7 +59,7 @@ def anneal_learn():
     print('Initial metric', initial_metric)
     metric = initial_metric
     positions = initial_positions
-    anneal_iters = 1_000
+    anneal_iters = 100
     min_delta = -10000
     metric_coeff = 1e-5
     all_positions = [initial_positions]
@@ -78,15 +78,22 @@ def anneal_learn():
         # mutate
         old_pos = all_positions[cur_idx]
         old_metric = all_metrics[cur_idx]
-        new_pos = mutate_positions(old_pos, bounds, 1 + max_step * np.cos(np.pi * cur_iter / anneal_iters))
-        if new_pos is None:
+        mut_pos = mutate_positions(old_pos, bounds, 1 + max_step * np.cos(np.pi / 2 * cur_iter / anneal_iters))
+        if mut_pos is None:
             continue
+            # mut_pos = old_pos
+        force = attendee_gradient(mut_pos, **metric_params)
+        print(np.max(force), np.min(force), np.mean(force))
+        # new_pos, _ = jiggle_positions(mut_pos + force * 1e-6 * np.cos(np.pi / 2 * cur_iter / anneal_iters), bounds)
+        # if new_pos is None:
+        #     continue
+        new_pos = mut_pos
         metric = calculate_happiness(new_pos, **metric_params, reduce='sum') * metric_coeff
         prob = np.exp(-(old_metric - metric) / (1 - (cur_iter / anneal_iters)))
         # print('Pr', prob)
         is_added = False
         if metric > np.max(all_metrics):
-            # print('New best')
+            print('New best')
             all_positions.append(new_pos)
             all_metrics.append(metric)
             is_added = True

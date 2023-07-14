@@ -37,3 +37,11 @@ def swarm_step(positions, bounds, old_metric, gradient_step: float = 1, max_step
         return None
     new_metric = calculate_happiness(new_positions_r, **metric_params, reduce='attendee')
     return new_positions_r, new_metric
+
+
+def attendee_gradient(positions, **metric_params):
+    attendees = metric_params['attendees']
+    happiness = calculate_happiness(positions, **metric_params, reduce='none')
+    vectors = (positions[np.newaxis, :] - attendees[:, np.newaxis])
+    vectors /= np.linalg.norm(vectors, axis=-1, keepdims=True)
+    return (vectors * happiness[..., np.newaxis]).sum(0)
