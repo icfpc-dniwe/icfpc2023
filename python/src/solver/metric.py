@@ -23,6 +23,7 @@ def check_positions_valid(
 ) -> bool:
     distances = pdist(musician_positions, metric='euclidean')
     if np.any(distances < min_distance):
+        # print('close')
         return False
     xmin += min_distance
     ymin += min_distance

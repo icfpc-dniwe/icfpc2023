@@ -72,9 +72,12 @@ def calculate_bounce_force(
     distances = squareform(pdist(positions, 'euclidean')) + np.eye(len(positions)) * min_distance
     # inter_forces = ((distances < min_distance) / (distances + eps))
     inter_forces = np.maximum(0, min_distance - distances)
-    inter_vecs = (positions[:, np.newaxis] - positions[np.newaxis, :]) // 2
+    inter_vecs = (positions[:, np.newaxis] - positions[np.newaxis, :]) / 2
+    inter_vecs += np.random.uniform(-1, 1, size=inter_vecs.shape)
+    # print('FMax1', np.max(inter_forces))
     # inter_vecs[np.linalg.norm(inter_vecs, axis=-1) > min_distance] = 0
     inter_forces = (inter_vecs * inter_forces[..., np.newaxis]).sum(axis=1)
+    # print('FMax2', np.max(inter_forces))
     xmin, ymin, xmax, ymax = bounds
     boundary_distances = np.stack((
         positions[:, 0] - xmin,

@@ -51,7 +51,7 @@ def generate_compliant_positions(bounds, num_to_generate: int, min_distance: flo
     return positions
 
 
-def jiggle_positions(positions: np.ndarray, bounds, step_size: float = 0.5, max_iter: int = 100, min_distance: float = 10):
+def jiggle_positions(positions: np.ndarray, bounds, step_size: float = 0.1, max_iter: int = 100, min_distance: float = 10):
     xmin, ymin, xmax, ymax = bounds
     iter_idx = 0
     step_size_r = step_size * min_distance
@@ -60,8 +60,9 @@ def jiggle_positions(positions: np.ndarray, bounds, step_size: float = 0.5, max_
         if iter_idx >= max_iter:
             return None, iter_idx
         forces = calculate_bounce_force(positions, bounds, min_distance=min_distance)
-        forces = forces / np.linalg.norm(forces + 1e-7, axis=1, keepdims=True)
-        positions += forces * step_size_r * np.cos(np.pi * (iter_idx - 1) / max_iter)
+        # forces = forces / np.linalg.norm(forces + 1e-7, axis=1, keepdims=True)
+        positions = positions + forces * step_size_r  # * np.cos(np.pi * (iter_idx - 1) / max_iter)
+        # print('jiggle', iter_idx, np.max(forces))
         # delta = np.max(np.abs(forces))
     return positions, iter_idx
 
@@ -69,10 +70,10 @@ def jiggle_positions(positions: np.ndarray, bounds, step_size: float = 0.5, max_
 def mutate_positions(positions, bounds, max_step: float):
     step_vecs = np.random.uniform(-max_step, max_step, size=positions.shape)
     new_positions = positions + step_vecs
-    new_positions[:, 0] = np.maximum(bounds[0], new_positions[:, 0])
-    new_positions[:, 1] = np.maximum(bounds[1], new_positions[:, 1])
-    new_positions[:, 0] = np.minimum(bounds[2], new_positions[:, 0])
-    new_positions[:, 1] = np.minimum(bounds[3], new_positions[:, 1])
+    new_positions[:, 0] = np.maximum(bounds[0] + 10, new_positions[:, 0] - 10)
+    new_positions[:, 1] = np.maximum(bounds[1] + 10, new_positions[:, 1] - 10)
+    new_positions[:, 0] = np.minimum(bounds[2] + 10, new_positions[:, 0] - 10)
+    new_positions[:, 1] = np.minimum(bounds[3] + 10, new_positions[:, 1] - 10)
     new_positions_r, num_iter = jiggle_positions(new_positions, bounds)
     if new_positions_r is None:
         print('new jiggling error', num_iter)
