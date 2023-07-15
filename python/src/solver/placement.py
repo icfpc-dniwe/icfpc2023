@@ -67,7 +67,7 @@ def jiggle_positions(positions: np.ndarray, bounds, step_size: float = 0.1, max_
     return positions, iter_idx
 
 
-def mutate_positions(positions, bounds, max_step: float):
+def mutate_positions(positions, bounds, max_step: float, jiggle_max_ste: int = 100):
     step_vecs = np.random.uniform(-max_step, max_step, size=positions.shape)
     # print(max_step)
     new_positions = positions + step_vecs
@@ -75,7 +75,7 @@ def mutate_positions(positions, bounds, max_step: float):
     new_positions[:, 1] = np.maximum(bounds[1] + 10, new_positions[:, 1] - 10)
     new_positions[:, 0] = np.minimum(bounds[2] + 10, new_positions[:, 0] - 10)
     new_positions[:, 1] = np.minimum(bounds[3] + 10, new_positions[:, 1] - 10)
-    new_positions_r, num_iter = jiggle_positions(new_positions, bounds)
+    new_positions_r, num_iter = jiggle_positions(new_positions, bounds, max_iter=jiggle_max_ste)
     if new_positions_r is None:
         print('new jiggling error', num_iter)
         return None
